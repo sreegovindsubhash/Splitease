@@ -1,0 +1,4 @@
+<resources>
+    <!-- Base application theme. The Compose theme is set in code. -->
+    <style name="Theme.SplitEase" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
