@@ -244,6 +244,7 @@ fun SplitEaseNavGraph(
                     groupRepository = app.groupRepository,
                     memberRepository = app.memberRepository,
                     expenseRepository = app.expenseRepository,
+                    settlementPaymentRepository = app.settlementPaymentRepository,
                 ),
             )
             BalancesScreen(

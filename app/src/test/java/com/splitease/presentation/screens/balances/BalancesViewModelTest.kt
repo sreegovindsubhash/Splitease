@@ -5,10 +5,12 @@ import com.splitease.domain.model.ExpenseCategory
 import com.splitease.domain.model.ExpenseSplit
 import com.splitease.domain.model.Group
 import com.splitease.domain.model.Member
+import com.splitease.domain.model.SettlementPayment
 import com.splitease.domain.model.SplitMethod
 import com.splitease.domain.repository.ExpenseRepository
 import com.splitease.domain.repository.GroupRepository
 import com.splitease.domain.repository.MemberRepository
+import com.splitease.domain.repository.SettlementPaymentRepository
 import com.splitease.domain.usecase.CalculateMemberBalancesUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,6 +41,7 @@ class BalancesViewModelTest {
     private lateinit var fakeGroupRepo: FakeGroupRepo
     private lateinit var fakeMemberRepo: FakeMemberRepo
     private lateinit var fakeExpenseRepo: FakeExpRepo
+    private lateinit var fakePaymentRepo: FakeSettlementPaymentRepo
 
     private val alice = Member(id = 1L, groupId = 1L, name = "Alice")
     private val bob = Member(id = 2L, groupId = 1L, name = "Bob")
@@ -50,6 +53,7 @@ class BalancesViewModelTest {
         fakeGroupRepo = FakeGroupRepo(group)
         fakeMemberRepo = FakeMemberRepo(listOf(alice, bob))
         fakeExpenseRepo = FakeExpRepo()
+        fakePaymentRepo = FakeSettlementPaymentRepo()
     }
 
     @AfterTest
@@ -62,6 +66,7 @@ class BalancesViewModelTest {
         groupRepository = fakeGroupRepo,
         memberRepository = fakeMemberRepo,
         expenseRepository = fakeExpenseRepo,
+        settlementPaymentRepository = fakePaymentRepo,
         calculateBalances = CalculateMemberBalancesUseCase(),
     )
 
@@ -331,7 +336,233 @@ class BalancesViewModelTest {
         assertFalse(vm.uiState.value.isEmpty)
         assertEquals(600L, vm.uiState.value.totalSpendMinorUnits)
     }
+    // ── Settlement-payment adjustment tests ───────────────────────────────────
+
+    /**
+     * TC-1  No settlement payments → adjusted balances equal raw expense balances.
+     */
+    @Test
+    fun settlementAdjustment_noPayments_adjustedEqualsRaw() = runTest {
+        // Alice paid ₹6 (60000 paise); both share equally → Alice net +30000, Bob net -30000
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        val aliceAdj = state.adjustedBalances.first { it.memberId == 1L }
+        val bobAdj   = state.adjustedBalances.first { it.memberId == 2L }
+
+        assertEquals(30_000L,  aliceAdj.adjustedNetMinorUnits, "No payments — Alice's adjusted net equals raw net")
+        assertEquals(-30_000L, bobAdj.adjustedNetMinorUnits,   "No payments — Bob's adjusted net equals raw net")
+    }
+
+    /**
+     * TC-2  Full settlement payment → both members become settled (adjusted net = 0).
+     */
+    @Test
+    fun settlementAdjustment_fullPayment_bothMembersSettled() = runTest {
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+        // Bob pays Alice the full ₹30,000
+        fakePaymentRepo.paymentsFlow.value = listOf(
+            payment(debtor = 2L, creditor = 1L, amount = 30_000L),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(0L, state.adjustedBalances.first { it.memberId == 1L }.adjustedNetMinorUnits,
+            "After full payment Alice should be settled")
+        assertEquals(0L, state.adjustedBalances.first { it.memberId == 2L }.adjustedNetMinorUnits,
+            "After full payment Bob should be settled")
+    }
+
+    /**
+     * TC-3  Partial settlement payment → outstanding amount decreases correctly.
+     */
+    @Test
+    fun settlementAdjustment_partialPayment_outstandingDecreases() = runTest {
+        // Bob owes Alice ₹30,000; Bob pays ₹10,000
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+        fakePaymentRepo.paymentsFlow.value = listOf(
+            payment(debtor = 2L, creditor = 1L, amount = 10_000L),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        val aliceAdj = state.adjustedBalances.first { it.memberId == 1L }
+        val bobAdj   = state.adjustedBalances.first { it.memberId == 2L }
+
+        assertEquals(-20_000L, bobAdj.adjustedNetMinorUnits,   "Bob still owes ₹20,000 after ₹10,000 partial payment")
+        assertEquals( 20_000L, aliceAdj.adjustedNetMinorUnits, "Alice owed ₹20,000 after receiving ₹10,000")
+    }
+
+    /**
+     * TC-4  Multiple settlement payments → adjusted balances accumulate correctly.
+     */
+    @Test
+    fun settlementAdjustment_multiplePayments_accumulateCorrectly() = runTest {
+        // Bob owes Alice ₹30,000; two payments: ₹10,000 + ₹10,000 = ₹20,000 total
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+        fakePaymentRepo.paymentsFlow.value = listOf(
+            payment(debtor = 2L, creditor = 1L, amount = 10_000L),
+            payment(debtor = 2L, creditor = 1L, amount = 10_000L),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(-10_000L, state.adjustedBalances.first { it.memberId == 2L }.adjustedNetMinorUnits,
+            "Bob owes ₹10,000 after two cumulative ₹10,000 payments")
+        assertEquals( 10_000L, state.adjustedBalances.first { it.memberId == 1L }.adjustedNetMinorUnits,
+            "Alice owed ₹10,000 after receiving ₹20,000 total across two payments")
+    }
+
+    /**
+     * TC-5  Net adjusted balances still sum to zero after payments.
+     */
+    @Test
+    fun settlementAdjustment_adjustedBalancesSumToZero() = runTest {
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+        fakePaymentRepo.paymentsFlow.value = listOf(
+            payment(debtor = 2L, creditor = 1L, amount = 15_000L),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val totalAdjustedNet = vm.uiState.value.adjustedBalances.sumOf { it.adjustedNetMinorUnits }
+        assertEquals(0L, totalAdjustedNet, "Adjusted net balances must sum to zero")
+    }
+
+    /**
+     * TC-6  Paid and Share values are unaffected by settlement payments.
+     */
+    @Test
+    fun settlementAdjustment_paidAndShareUnchangedByPayments() = runTest {
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+        fakePaymentRepo.paymentsFlow.value = listOf(
+            payment(debtor = 2L, creditor = 1L, amount = 30_000L),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val aliceRaw = vm.uiState.value.balances.first { it.memberId == 1L }
+        val bobRaw   = vm.uiState.value.balances.first { it.memberId == 2L }
+
+        // Raw ledger values must not be changed by payments
+        assertEquals(60_000L, aliceRaw.totalPaidMinorUnits, "Alice paid amount unchanged")
+        assertEquals(30_000L, aliceRaw.totalOwedMinorUnits, "Alice share unchanged")
+        assertEquals(     0L, bobRaw.totalPaidMinorUnits,   "Bob paid amount unchanged")
+        assertEquals(30_000L, bobRaw.totalOwedMinorUnits,   "Bob share unchanged")
+    }
+
+    /**
+     * TC-7  Summary-card counters reflect adjusted positions, not raw balances.
+     */
+    @Test
+    fun settlementAdjustment_creditorsAndDebtorsCountUpdatedAfterFullPayment() = runTest {
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+        fakePaymentRepo.paymentsFlow.value = listOf(
+            payment(debtor = 2L, creditor = 1L, amount = 30_000L),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(0, state.creditorsCount, "After full payment no one is owed money")
+        assertEquals(0, state.debtorsCount,   "After full payment no one owes money")
+    }
+
+    /**
+     * TC-8  Reactive update — adding a payment reactively updates adjusted balances.
+     */
+    @Test
+    fun settlementAdjustment_reactivePayment_updatesAdjustedBalances() = runTest {
+        fakeExpenseRepo.seedExpense(
+            expense(id = 1L, amount = 60_000L, paidBy = 1L),
+            splits = listOf(
+                split(expenseId = 1L, memberId = 1L, share = 30_000L),
+                split(expenseId = 1L, memberId = 2L, share = 30_000L),
+            ),
+        )
+
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Before payment Bob owes Alice
+        assertEquals(-30_000L, vm.uiState.value.adjustedBalances.first { it.memberId == 2L }.adjustedNetMinorUnits)
+
+        // Record a payment reactively
+        fakePaymentRepo.paymentsFlow.value = listOf(
+            payment(debtor = 2L, creditor = 1L, amount = 30_000L),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(0L, vm.uiState.value.adjustedBalances.first { it.memberId == 2L }.adjustedNetMinorUnits,
+            "Adjusted balance should update reactively after payment")
+    }
 }
+
+// ── Payment helper ────────────────────────────────────────────────────────────
+
+private fun payment(debtor: Long, creditor: Long, amount: Long, id: Long = 0L) =
+    SettlementPayment(
+        id = id,
+        groupId = 1L,
+        debtorMemberId = debtor,
+        creditorMemberId = creditor,
+        amountMinorUnits = amount,
+        paidAt = 1_700_000_000_000L,
+    )
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -354,6 +585,15 @@ private fun split(expenseId: Long, memberId: Long, share: Long) = ExpenseSplit(
 )
 
 // ── Fakes ─────────────────────────────────────────────────────────────────────
+
+private class FakeSettlementPaymentRepo : SettlementPaymentRepository {
+    val paymentsFlow = MutableStateFlow<List<SettlementPayment>>(emptyList())
+
+    override fun getPaymentsForGroup(groupId: Long): Flow<List<SettlementPayment>> = paymentsFlow
+    override suspend fun recordPayment(payment: SettlementPayment): Long = 0L
+    override suspend fun deletePayment(paymentId: Long) = Unit
+}
+
 
 private class FakeGroupRepo(private val group: Group) : GroupRepository {
     var shouldThrow = false

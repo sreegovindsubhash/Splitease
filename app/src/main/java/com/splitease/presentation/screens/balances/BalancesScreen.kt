@@ -235,9 +235,15 @@ private fun BalancesListContent(
         }
 
         // ── Per-member cards ──────────────────────────────────────────────────
+        // Zip raw balance (for Paid / Share rows) with its adjusted counterpart
+        // (for the net row).  The two lists are always in the same member order
+        // produced by CalculateMemberBalancesUseCase.
+        val adjustedByMember = uiState.adjustedBalances.associateBy { it.memberId }
         items(uiState.balances, key = { it.memberId }) { balance ->
             MemberBalanceCard(
                 balance = balance,
+                adjustedNet = adjustedByMember[balance.memberId]?.adjustedNetMinorUnits
+                    ?: balance.netMinorUnits,
                 currencyCode = uiState.currencyCode,
             )
         }
@@ -328,12 +334,13 @@ private fun BalancesSummaryCard(uiState: BalancesUiState) {
 @Composable
 private fun MemberBalanceCard(
     balance: MemberBalance,
+    /** Adjusted net after settlement payments — drives the net row and accessibility label. */
+    adjustedNet: Long,
     currencyCode: String,
 ) {
-    val net = balance.netMinorUnits
     val balanceState = when {
-        net > 0L -> BalanceState.OWED
-        net < 0L -> BalanceState.OWES
+        adjustedNet > 0L -> BalanceState.OWED
+        adjustedNet < 0L -> BalanceState.OWES
         else -> BalanceState.SETTLED
     }
 
@@ -341,7 +348,7 @@ private fun MemberBalanceCard(
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
-                contentDescription = memberBalanceDescription(balance, currencyCode)
+                contentDescription = memberBalanceDescription(balance, adjustedNet, currencyCode)
             },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -376,10 +383,10 @@ private fun MemberBalanceCard(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // Net balance — the primary output
+            // Net balance — driven by ADJUSTED net (after settlement payments)
             NetBalanceRow(
                 balanceState = balanceState,
-                netMinorUnits = net,
+                netMinorUnits = adjustedNet,
                 currencyCode = currencyCode,
             )
         }
@@ -483,14 +490,17 @@ private fun NetBalanceRow(
 
 private enum class BalanceState { OWED, OWES, SETTLED }
 
-private fun memberBalanceDescription(balance: MemberBalance, currencyCode: String): String {
-    val net = balance.netMinorUnits
-    val netFormatted = MoneyFormatter.format(kotlin.math.abs(net), currencyCode)
+private fun memberBalanceDescription(
+    balance: MemberBalance,
+    adjustedNet: Long,
+    currencyCode: String,
+): String {
+    val netFormatted = MoneyFormatter.format(kotlin.math.abs(adjustedNet), currencyCode)
     val paidFormatted = MoneyFormatter.format(balance.totalPaidMinorUnits, currencyCode)
     val owedFormatted = MoneyFormatter.format(balance.totalOwedMinorUnits, currencyCode)
     val statusText = when {
-        net > 0L -> "is owed $netFormatted"
-        net < 0L -> "owes $netFormatted"
+        adjustedNet > 0L -> "is owed $netFormatted"
+        adjustedNet < 0L -> "owes $netFormatted"
         else -> "is settled"
     }
     return "${balance.memberName}: paid $paidFormatted, share $owedFormatted, $statusText"

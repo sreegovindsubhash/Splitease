@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.splitease.domain.repository.ExpenseRepository
 import com.splitease.domain.repository.GroupRepository
 import com.splitease.domain.repository.MemberRepository
+import com.splitease.domain.repository.SettlementPaymentRepository
 import com.splitease.domain.usecase.CalculateMemberBalancesUseCase
 
 class BalancesViewModelFactory(
@@ -12,6 +13,7 @@ class BalancesViewModelFactory(
     private val groupRepository: GroupRepository,
     private val memberRepository: MemberRepository,
     private val expenseRepository: ExpenseRepository,
+    private val settlementPaymentRepository: SettlementPaymentRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -21,6 +23,7 @@ class BalancesViewModelFactory(
                 groupRepository = groupRepository,
                 memberRepository = memberRepository,
                 expenseRepository = expenseRepository,
+                settlementPaymentRepository = settlementPaymentRepository,
                 calculateBalances = CalculateMemberBalancesUseCase(),
             ) as T
         }
