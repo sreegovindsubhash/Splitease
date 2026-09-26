@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Payments
@@ -57,6 +58,7 @@ fun GroupDetailsScreen(
     onNavigateToExpenses: () -> Unit = {},
     onNavigateToBalances: () -> Unit = {},
     onNavigateToSettlement: () -> Unit = {},
+    onNavigateToSummary: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -106,6 +108,7 @@ fun GroupDetailsScreen(
                 onNavigateToExpenses = onNavigateToExpenses,
                 onNavigateToBalances = onNavigateToBalances,
                 onNavigateToSettlement = onNavigateToSettlement,
+                onNavigateToSummary = onNavigateToSummary,
             )
             is GroupDetailsUiState.Error -> GroupDetailsErrorContent(
                 message = state.message,
@@ -228,6 +231,7 @@ private fun GroupDetailsSuccessContent(
     onNavigateToExpenses: () -> Unit,
     onNavigateToBalances: () -> Unit,
     onNavigateToSettlement: () -> Unit,
+    onNavigateToSummary: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -244,6 +248,7 @@ private fun GroupDetailsSuccessContent(
             onNavigateToExpenses = onNavigateToExpenses,
             onNavigateToBalances = onNavigateToBalances,
             onNavigateToSettlement = onNavigateToSettlement,
+            onNavigateToSummary = onNavigateToSummary,
         )
         GroupEmptyStateCard(group = group)
     }
@@ -309,6 +314,7 @@ private fun GroupStatsCard(
     onNavigateToExpenses: () -> Unit,
     onNavigateToBalances: () -> Unit,
     onNavigateToSettlement: () -> Unit,
+    onNavigateToSummary: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -444,6 +450,42 @@ private fun GroupStatsCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Balances",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // Summary row — tappable to navigate to Summary screen
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        onClickLabel = "View summary",
+                        onClick = onNavigateToSummary,
+                    )
+                    .semantics { role = Role.Button },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Summary",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

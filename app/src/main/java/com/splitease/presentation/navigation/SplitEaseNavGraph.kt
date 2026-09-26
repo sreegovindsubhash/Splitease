@@ -34,6 +34,9 @@ import com.splitease.presentation.screens.members.MembersViewModelFactory
 import com.splitease.presentation.screens.settlement.SettlementScreen
 import com.splitease.presentation.screens.settlement.SettlementViewModel
 import com.splitease.presentation.screens.settlement.SettlementViewModelFactory
+import com.splitease.presentation.screens.summary.SummaryScreen
+import com.splitease.presentation.screens.summary.SummaryViewModel
+import com.splitease.presentation.screens.summary.SummaryViewModelFactory
 
 @Composable
 fun SplitEaseNavGraph(
@@ -89,6 +92,7 @@ fun SplitEaseNavGraph(
                 onNavigateToExpenses = { navController.navigate(Screen.Expenses.createRoute(groupId)) },
                 onNavigateToBalances = { navController.navigate(Screen.Balances.createRoute(groupId)) },
                 onNavigateToSettlement = { navController.navigate(Screen.Settlement.createRoute(groupId)) },
+                onNavigateToSummary = { navController.navigate(Screen.Summary.createRoute(groupId)) },
             )
         }
 
@@ -193,6 +197,32 @@ fun SplitEaseNavGraph(
             SettlementScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Screen.Summary.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: return@composable
+            val viewModel: SummaryViewModel = viewModel(
+                factory = SummaryViewModelFactory(
+                    groupId = groupId,
+                    groupRepository = app.groupRepository,
+                    memberRepository = app.memberRepository,
+                    expenseRepository = app.expenseRepository,
+                    settlementPaymentRepository = app.settlementPaymentRepository,
+                ),
+            )
+            SummaryScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToBalances = { navController.navigate(Screen.Balances.createRoute(groupId)) },
+                onNavigateToExpenses = { navController.navigate(Screen.Expenses.createRoute(groupId)) },
+                onNavigateToSettlement = { navController.navigate(Screen.Settlement.createRoute(groupId)) },
+                onNavigateToAddExpense = {
+                    navController.navigate(Screen.AddEditExpense.createRoute(groupId, 0L))
+                },
             )
         }
     }
