@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +48,7 @@ fun GroupsScreen(
     viewModel: GroupsViewModel,
     onCreateGroup: () -> Unit,
     onGroupClick: (Long) -> Unit,
+    onNavigateToSettings: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -57,6 +60,19 @@ fun GroupsScreen(
                         text = "SplitEase",
                         style = MaterialTheme.typography.titleLarge,
                     )
+                },
+                actions = {
+                    IconButton(
+                        onClick = onNavigateToSettings,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Settings"
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

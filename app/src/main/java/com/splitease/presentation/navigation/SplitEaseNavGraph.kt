@@ -1,6 +1,7 @@
 package com.splitease.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -10,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.splitease.SplitEaseApplication
+import com.splitease.data.repository.ThemePreferenceRepository
 import com.splitease.presentation.screens.createGroup.CreateGroupScreen
 import com.splitease.presentation.screens.createGroup.CreateGroupViewModel
 import com.splitease.presentation.screens.createGroup.CreateGroupViewModelFactory
@@ -34,16 +36,26 @@ import com.splitease.presentation.screens.members.MembersViewModelFactory
 import com.splitease.presentation.screens.settlement.SettlementScreen
 import com.splitease.presentation.screens.settlement.SettlementViewModel
 import com.splitease.presentation.screens.settlement.SettlementViewModelFactory
+import com.splitease.presentation.screens.settings.SettingsScreen
 import com.splitease.presentation.screens.summary.SummaryScreen
 import com.splitease.presentation.screens.summary.SummaryViewModel
 import com.splitease.presentation.screens.summary.SummaryViewModelFactory
+import com.splitease.presentation.theme.AppTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun SplitEaseNavGraph(
     navController: NavHostController = rememberNavController(),
+    themePreferenceRepository: ThemePreferenceRepository? = null,
+    currentTheme: AppTheme = AppTheme.SYSTEM,
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as SplitEaseApplication
+    val scope = rememberCoroutineScope()
+
+    // Use the repo passed from MainActivity; fall back to the app singleton when
+    // the default no-arg overload is called (e.g. from Compose previews).
+    val themeRepo = themePreferenceRepository ?: app.themePreferenceRepository
 
     NavHost(
         navController = navController,
@@ -59,6 +71,7 @@ fun SplitEaseNavGraph(
                 onGroupClick = { groupId ->
                     navController.navigate(Screen.GroupDetails.createRoute(groupId))
                 },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
             )
         }
 
@@ -223,6 +236,16 @@ fun SplitEaseNavGraph(
                 onNavigateToAddExpense = {
                     navController.navigate(Screen.AddEditExpense.createRoute(groupId, 0L))
                 },
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                currentTheme = currentTheme,
+                onThemeSelected = { theme ->
+                    scope.launch { themeRepo.setTheme(theme) }
+                },
+                onNavigateBack = { navController.popBackStack() },
             )
         }
     }

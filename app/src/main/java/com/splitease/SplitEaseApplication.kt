@@ -6,6 +6,7 @@ import com.splitease.data.repository.ExpenseRepositoryImpl
 import com.splitease.data.repository.GroupRepositoryImpl
 import com.splitease.data.repository.MemberRepositoryImpl
 import com.splitease.data.repository.SettlementPaymentRepositoryImpl
+import com.splitease.data.repository.ThemePreferenceRepository
 import com.splitease.domain.repository.ExpenseRepository
 import com.splitease.domain.repository.GroupRepository
 import com.splitease.domain.repository.MemberRepository
@@ -33,5 +34,9 @@ class SplitEaseApplication : Application() {
 
     val settlementPaymentRepository: SettlementPaymentRepository by lazy {
         SettlementPaymentRepositoryImpl(database.settlementPaymentDao())
+    }
+
+    val themePreferenceRepository: ThemePreferenceRepository by lazy {
+        ThemePreferenceRepository(this)
     }
 }
