@@ -65,6 +65,12 @@ fun SplitEaseNavGraph(
     // the default no-arg overload is called (e.g. from Compose previews).
     val themeRepo = themePreferenceRepository ?: app.themePreferenceRepository
 
+    // Single shared throttle state for all back-arrow guards in this graph.
+    // Allocated once here so it survives destination transitions: a rapid
+    // second tap that lands on the newly-exposed destination after the first
+    // pop still sees the stamped timestamp and is suppressed.
+    val backThrottleState = rememberNavBackThrottleState()
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -114,6 +120,7 @@ fun SplitEaseNavGraph(
             val viewModel: CreateGroupViewModel = viewModel(
                 factory = CreateGroupViewModelFactory(app.groupRepository),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             CreateGroupScreen(
                 viewModel = viewModel,
                 onNavigateToGroupDetails = { groupId ->
@@ -121,7 +128,7 @@ fun SplitEaseNavGraph(
                         popUpTo(Screen.CreateGroup.route) { inclusive = true }
                     }
                 },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
             )
         }
 
@@ -133,9 +140,10 @@ fun SplitEaseNavGraph(
             val viewModel: GroupDetailsViewModel = viewModel(
                 factory = GroupDetailsViewModelFactory(app.groupRepository, groupId),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             GroupDetailsScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
                 onNavigateToEdit = {
                     navController.navigate(Screen.EditGroup.createRoute(groupId))
                 },
@@ -163,9 +171,10 @@ fun SplitEaseNavGraph(
             val viewModel: EditGroupViewModel = viewModel(
                 factory = EditGroupViewModelFactory(app.groupRepository, groupId),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             EditGroupScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
             )
         }
 
@@ -177,9 +186,10 @@ fun SplitEaseNavGraph(
             val viewModel: MembersViewModel = viewModel(
                 factory = MembersViewModelFactory(app.memberRepository, groupId),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             MembersScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
             )
         }
 
@@ -196,9 +206,10 @@ fun SplitEaseNavGraph(
                     memberRepository = app.memberRepository,
                 ),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             ExpensesScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
                 onAddExpense = {
                     navController.navigate(Screen.AddEditExpense.createRoute(groupId, 0L))
                 },
@@ -226,10 +237,11 @@ fun SplitEaseNavGraph(
                     memberRepository = app.memberRepository,
                 ),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             AddEditExpenseScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateAfterSave = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
+                onNavigateAfterSave = { navController.safePopBackStack() },
             )
         }
 
@@ -247,9 +259,10 @@ fun SplitEaseNavGraph(
                     settlementPaymentRepository = app.settlementPaymentRepository,
                 ),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             BalancesScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
                 onNavigateToSettlement = { navController.navigate(Screen.Settlement.createRoute(groupId)) },
             )
         }
@@ -268,9 +281,10 @@ fun SplitEaseNavGraph(
                     settlementPaymentRepository = app.settlementPaymentRepository,
                 ),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             SettlementScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
             )
         }
 
@@ -288,9 +302,10 @@ fun SplitEaseNavGraph(
                     settlementPaymentRepository = app.settlementPaymentRepository,
                 ),
             )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             SummaryScreen(
                 viewModel = viewModel,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
                 onNavigateToBalances = { navController.navigate(Screen.Balances.createRoute(groupId)) },
                 onNavigateToExpenses = { navController.navigate(Screen.Expenses.createRoute(groupId)) },
                 onNavigateToSettlement = { navController.navigate(Screen.Settlement.createRoute(groupId)) },
@@ -301,12 +316,13 @@ fun SplitEaseNavGraph(
         }
 
         composable(Screen.Settings.route) {
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             SettingsScreen(
                 currentTheme = currentTheme,
                 onThemeSelected = { theme ->
                     scope.launch { themeRepo.setTheme(theme) }
                 },
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = guardedBack,
             )
         }
     }
