@@ -18,6 +18,12 @@ data class ExpensesUiState(
 
     // Delete confirmation
     val expensePendingDelete: Expense? = null,
+
+    // CSV export
+    /** Non-null while the Android document-creation launcher should be invoked. Consumed once used. */
+    val pendingCsvFilename: String? = null,
+    /** One-shot message shown in the Snackbar after export completes or fails. Null when idle. */
+    val csvExportMessage: String? = null,
 ) {
     val isEmpty: Boolean get() = !isLoading && expenses.isEmpty() && !groupNotFound
 

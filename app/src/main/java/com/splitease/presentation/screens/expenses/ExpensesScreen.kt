@@ -1,5 +1,8 @@
 package com.splitease.presentation.screens.expenses
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -26,6 +30,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -42,9 +48,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,7 +76,30 @@ fun ExpensesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
+    // ── CSV document-creation launcher ────────────────────────────────────────
+    // Android will display the system file-picker/document-provider UI.
+    // The user picks a save location; we receive the URI and write the CSV.
+    val csvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.onCsvUriReady(uri, context)
+        }
+        // If uri == null the user cancelled; no error shown (per spec).
+    }
+
+    // Fire the launcher exactly once when pendingCsvFilename becomes non-null.
+    LaunchedEffect(uiState.pendingCsvFilename) {
+        val filename = uiState.pendingCsvFilename
+        if (filename != null) {
+            viewModel.onCsvFilenameLauncherConsumed()   // clear before launching
+            csvLauncher.launch(filename)
+        }
+    }
+
+    // Show error messages in snackbar.
     LaunchedEffect(uiState.errorMessage) {
         val msg = uiState.errorMessage
         if (msg != null) {
@@ -75,6 +107,18 @@ fun ExpensesScreen(
             viewModel.onErrorDismissed()
         }
     }
+
+    // Show CSV export success/failure message.
+    LaunchedEffect(uiState.csvExportMessage) {
+        val msg = uiState.csvExportMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.onCsvMessageConsumed()
+        }
+    }
+
+    // ── Overflow menu state ───────────────────────────────────────────────────
+    var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -92,6 +136,39 @@ fun ExpensesScreen(
                         modifier = Modifier.semantics { contentDescription = "Back" },
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                actions = {
+                    // Only show the overflow menu when we have a valid group.
+                    if (!uiState.isLoading && !uiState.groupNotFound) {
+                        Box {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "More options"
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = null,
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Export CSV") },
+                                    onClick = {
+                                        showMenu = false
+                                        viewModel.onExportCsvClicked()
+                                    },
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "Export expenses as CSV file"
+                                    },
+                                )
+                            }
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
