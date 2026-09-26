@@ -52,6 +52,7 @@ fun GroupDetailsScreen(
     viewModel: GroupDetailsViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToMembers: () -> Unit = {},
+    onNavigateToExpenses: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -98,6 +99,7 @@ fun GroupDetailsScreen(
                 group = state.group,
                 paddingValues = paddingValues,
                 onNavigateToMembers = onNavigateToMembers,
+                onNavigateToExpenses = onNavigateToExpenses,
             )
             is GroupDetailsUiState.Error -> GroupDetailsErrorContent(
                 message = state.message,
@@ -217,6 +219,7 @@ private fun GroupDetailsSuccessContent(
     group: Group,
     paddingValues: PaddingValues,
     onNavigateToMembers: () -> Unit,
+    onNavigateToExpenses: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -227,7 +230,11 @@ private fun GroupDetailsSuccessContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         GroupInfoCard(group = group)
-        GroupStatsCard(group = group, onNavigateToMembers = onNavigateToMembers)
+        GroupStatsCard(
+            group = group,
+            onNavigateToMembers = onNavigateToMembers,
+            onNavigateToExpenses = onNavigateToExpenses,
+        )
         GroupEmptyStateCard(group = group)
     }
 }
@@ -286,7 +293,11 @@ private fun GroupInfoCard(group: Group) {
 }
 
 @Composable
-private fun GroupStatsCard(group: Group, onNavigateToMembers: () -> Unit) {
+private fun GroupStatsCard(
+    group: Group,
+    onNavigateToMembers: () -> Unit,
+    onNavigateToExpenses: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -354,8 +365,15 @@ private fun GroupStatsCard(group: Group, onNavigateToMembers: () -> Unit) {
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
+            // Expenses row — tappable to navigate to Expenses screen
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        onClickLabel = "View expenses",
+                        onClick = onNavigateToExpenses,
+                    )
+                    .semantics { role = Role.Button },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -373,12 +391,21 @@ private fun GroupStatsCard(group: Group, onNavigateToMembers: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                AmountText(
-                    amountMinorUnits = group.totalAmountMinorUnits,
-                    currencyCode = group.currencyCode,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AmountText(
+                        amountMinorUnits = group.totalAmountMinorUnits,
+                        currencyCode = group.currencyCode,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
