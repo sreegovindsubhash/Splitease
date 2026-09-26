@@ -13,6 +13,9 @@ import com.splitease.SplitEaseApplication
 import com.splitease.presentation.screens.createGroup.CreateGroupScreen
 import com.splitease.presentation.screens.createGroup.CreateGroupViewModel
 import com.splitease.presentation.screens.createGroup.CreateGroupViewModelFactory
+import com.splitease.presentation.screens.groupDetails.GroupDetailsScreen
+import com.splitease.presentation.screens.groupDetails.GroupDetailsViewModel
+import com.splitease.presentation.screens.groupDetails.GroupDetailsViewModelFactory
 import com.splitease.presentation.screens.groups.GroupsScreen
 import com.splitease.presentation.screens.groups.GroupsViewModel
 import com.splitease.presentation.screens.groups.GroupsViewModelFactory
@@ -59,9 +62,15 @@ fun SplitEaseNavGraph(
         composable(
             route = Screen.GroupDetails.route,
             arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
-        ) {
-            // Placeholder — implemented in a later phase
-            androidx.compose.material3.Text("Group Details — coming soon")
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: return@composable
+            val viewModel: GroupDetailsViewModel = viewModel(
+                factory = GroupDetailsViewModelFactory(app.groupRepository, groupId),
+            )
+            GroupDetailsScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+            )
         }
     }
 }
