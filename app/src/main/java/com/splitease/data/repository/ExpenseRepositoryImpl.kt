@@ -26,6 +26,9 @@ class ExpenseRepositoryImpl(
     override fun getSplitsForExpense(expenseId: Long): Flow<List<ExpenseSplit>> =
         splitDao.getSplitsForExpense(expenseId).map { list -> list.map { it.toDomain() } }
 
+    override fun getSplitsForGroup(groupId: Long): Flow<List<ExpenseSplit>> =
+        splitDao.getSplitsForGroup(groupId).map { list -> list.map { it.toDomain() } }
+
     /**
      * Inserts the expense and its splits in a single transaction.
      * The splits must reconcile: sum(splits.shareMinorUnits) == expense.amountMinorUnits.

@@ -216,6 +216,9 @@ private class FakeExpenseRepo : ExpenseRepository {
     override fun getSplitsForExpense(expenseId: Long): Flow<List<ExpenseSplit>> =
         flowOf(emptyList())
 
+    override fun getSplitsForGroup(groupId: Long): Flow<List<ExpenseSplit>> =
+        flowOf(emptyList())
+
     override suspend fun addExpense(expense: Expense, splits: List<ExpenseSplit>): Long {
         lastSavedExpense = expense
         lastSavedSplits = splits

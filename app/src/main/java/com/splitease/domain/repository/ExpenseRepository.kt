@@ -8,6 +8,7 @@ interface ExpenseRepository {
     fun getExpensesForGroup(groupId: Long): Flow<List<Expense>>
     suspend fun getExpenseById(id: Long): Expense?
     fun getSplitsForExpense(expenseId: Long): Flow<List<ExpenseSplit>>
+    fun getSplitsForGroup(groupId: Long): Flow<List<ExpenseSplit>>
     suspend fun addExpense(expense: Expense, splits: List<ExpenseSplit>): Long
     suspend fun updateExpense(expense: Expense, splits: List<ExpenseSplit>)
     suspend fun deleteExpense(expense: Expense)

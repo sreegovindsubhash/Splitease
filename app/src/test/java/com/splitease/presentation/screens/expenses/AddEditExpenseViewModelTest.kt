@@ -397,6 +397,9 @@ private class FakeExpRepo : ExpenseRepository {
     override fun getSplitsForExpense(expenseId: Long): Flow<List<ExpenseSplit>> =
         splits.map { list -> list.filter { it.expenseId == expenseId } }
 
+    override fun getSplitsForGroup(groupId: Long): Flow<List<ExpenseSplit>> =
+        splits
+
     override suspend fun addExpense(expense: Expense, splits: List<ExpenseSplit>): Long {
         saveCallCount++
         if (delay) kotlinx.coroutines.delay(10_000)

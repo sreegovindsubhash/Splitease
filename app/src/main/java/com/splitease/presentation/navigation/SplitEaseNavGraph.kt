@@ -25,6 +25,9 @@ import com.splitease.presentation.screens.expenses.AddEditExpenseViewModelFactor
 import com.splitease.presentation.screens.expenses.ExpensesScreen
 import com.splitease.presentation.screens.expenses.ExpensesViewModel
 import com.splitease.presentation.screens.expenses.ExpensesViewModelFactory
+import com.splitease.presentation.screens.balances.BalancesScreen
+import com.splitease.presentation.screens.balances.BalancesViewModel
+import com.splitease.presentation.screens.balances.BalancesViewModelFactory
 import com.splitease.presentation.screens.members.MembersScreen
 import com.splitease.presentation.screens.members.MembersViewModel
 import com.splitease.presentation.screens.members.MembersViewModelFactory
@@ -81,6 +84,7 @@ fun SplitEaseNavGraph(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToMembers = { navController.navigate(Screen.Members.createRoute(groupId)) },
                 onNavigateToExpenses = { navController.navigate(Screen.Expenses.createRoute(groupId)) },
+                onNavigateToBalances = { navController.navigate(Screen.Balances.createRoute(groupId)) },
             )
         }
 
@@ -145,6 +149,25 @@ fun SplitEaseNavGraph(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateAfterSave = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Screen.Balances.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: return@composable
+            val viewModel: BalancesViewModel = viewModel(
+                factory = BalancesViewModelFactory(
+                    groupId = groupId,
+                    groupRepository = app.groupRepository,
+                    memberRepository = app.memberRepository,
+                    expenseRepository = app.expenseRepository,
+                ),
+            )
+            BalancesScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
             )
         }
     }

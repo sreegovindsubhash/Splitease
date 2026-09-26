@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Button
@@ -53,6 +54,7 @@ fun GroupDetailsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToMembers: () -> Unit = {},
     onNavigateToExpenses: () -> Unit = {},
+    onNavigateToBalances: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -100,6 +102,7 @@ fun GroupDetailsScreen(
                 paddingValues = paddingValues,
                 onNavigateToMembers = onNavigateToMembers,
                 onNavigateToExpenses = onNavigateToExpenses,
+                onNavigateToBalances = onNavigateToBalances,
             )
             is GroupDetailsUiState.Error -> GroupDetailsErrorContent(
                 message = state.message,
@@ -220,6 +223,7 @@ private fun GroupDetailsSuccessContent(
     paddingValues: PaddingValues,
     onNavigateToMembers: () -> Unit,
     onNavigateToExpenses: () -> Unit,
+    onNavigateToBalances: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -234,6 +238,7 @@ private fun GroupDetailsSuccessContent(
             group = group,
             onNavigateToMembers = onNavigateToMembers,
             onNavigateToExpenses = onNavigateToExpenses,
+            onNavigateToBalances = onNavigateToBalances,
         )
         GroupEmptyStateCard(group = group)
     }
@@ -297,6 +302,7 @@ private fun GroupStatsCard(
     group: Group,
     onNavigateToMembers: () -> Unit,
     onNavigateToExpenses: () -> Unit,
+    onNavigateToBalances: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -406,6 +412,42 @@ private fun GroupStatsCard(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // Balances row — tappable to navigate to Balances screen
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        onClickLabel = "View balances",
+                        onClick = onNavigateToBalances,
+                    )
+                    .semantics { role = Role.Button },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalance,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Balances",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

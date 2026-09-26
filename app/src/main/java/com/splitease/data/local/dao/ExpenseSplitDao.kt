@@ -14,6 +14,16 @@ interface ExpenseSplitDao {
     @Query("SELECT * FROM expense_splits WHERE expense_id = :expenseId")
     fun getSplitsForExpense(expenseId: Long): Flow<List<ExpenseSplitEntity>>
 
+    @Query(
+        """
+        SELECT es.*
+        FROM expense_splits es
+        INNER JOIN expenses e ON e.id = es.expense_id
+        WHERE e.group_id = :groupId
+        """
+    )
+    fun getSplitsForGroup(groupId: Long): Flow<List<ExpenseSplitEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSplits(splits: List<ExpenseSplitEntity>)
 
