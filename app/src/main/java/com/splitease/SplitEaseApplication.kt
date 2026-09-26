@@ -6,6 +6,7 @@ import com.splitease.data.repository.ExpenseRepositoryImpl
 import com.splitease.data.repository.GroupRepositoryImpl
 import com.splitease.data.repository.MemberRepositoryImpl
 import com.splitease.data.repository.SettlementPaymentRepositoryImpl
+import com.splitease.data.repository.OnboardingPreferenceRepository
 import com.splitease.data.repository.ThemePreferenceRepository
 import com.splitease.domain.repository.ExpenseRepository
 import com.splitease.domain.repository.GroupRepository
@@ -38,5 +39,9 @@ class SplitEaseApplication : Application() {
 
     val themePreferenceRepository: ThemePreferenceRepository by lazy {
         ThemePreferenceRepository(this)
+    }
+
+    val onboardingPreferenceRepository: OnboardingPreferenceRepository by lazy {
+        OnboardingPreferenceRepository(this)
     }
 }

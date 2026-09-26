@@ -36,6 +36,9 @@ import com.splitease.presentation.screens.members.MembersViewModelFactory
 import com.splitease.presentation.screens.settlement.SettlementScreen
 import com.splitease.presentation.screens.settlement.SettlementViewModel
 import com.splitease.presentation.screens.settlement.SettlementViewModelFactory
+import com.splitease.presentation.screens.onboarding.OnboardingScreen
+import com.splitease.presentation.screens.onboarding.OnboardingViewModel
+import com.splitease.presentation.screens.onboarding.OnboardingViewModelFactory
 import com.splitease.presentation.screens.settings.SettingsScreen
 import com.splitease.presentation.screens.summary.SummaryScreen
 import com.splitease.presentation.screens.summary.SummaryViewModel
@@ -46,6 +49,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SplitEaseNavGraph(
     navController: NavHostController = rememberNavController(),
+    startDestination: String = Screen.Groups.route,
     themePreferenceRepository: ThemePreferenceRepository? = null,
     currentTheme: AppTheme = AppTheme.SYSTEM,
 ) {
@@ -59,8 +63,27 @@ fun SplitEaseNavGraph(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Groups.route,
+        startDestination = startDestination,
     ) {
+        composable(Screen.Onboarding.route) {
+            val viewModel: OnboardingViewModel = viewModel(
+                factory = OnboardingViewModelFactory(app.onboardingPreferenceRepository),
+            )
+            OnboardingScreen(
+                viewModel = viewModel,
+                onNavigateToCreateGroup = {
+                    navController.navigate(Screen.CreateGroup.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                },
+                onNavigateToGroups = {
+                    navController.navigate(Screen.Groups.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(Screen.Groups.route) {
             val viewModel: GroupsViewModel = viewModel(
                 factory = GroupsViewModelFactory(app.groupRepository),
