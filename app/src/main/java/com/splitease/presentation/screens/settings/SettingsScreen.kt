@@ -28,8 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -98,6 +100,16 @@ private fun SettingsContent(
     onThemeSelected: (AppTheme) -> Unit,
     paddingValues: PaddingValues,
 ) {
+    val context = LocalContext.current
+    val versionName: String = remember {
+        try {
+            val info = context.packageManager.getPackageInfo(context.packageName, 0)
+            info.versionName ?: ""
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -109,6 +121,14 @@ private fun SettingsContent(
             currentTheme = currentTheme,
             onThemeSelected = onThemeSelected,
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        AccessibilitySection()
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        AboutSection(versionName = versionName)
     }
 }
 
@@ -179,6 +199,118 @@ private val ThemeOptions = listOf(
         description = "Maximum foreground/background contrast",
     ),
 )
+
+// ── Accessibility section ─────────────────────────────────────────────────────
+
+@Composable
+private fun AccessibilitySection() {
+    Text(
+        text = "Accessibility",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            InfoRow(
+                title = "Accessibility support",
+                body = "SplitEase supports TalkBack, large text, high contrast, and accessible touch targets.",
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            InfoRow(
+                title = "Large text",
+                body = "SplitEase follows Android font scaling so text can be enlarged from your device's accessibility settings.",
+            )
+        }
+    }
+}
+
+// ── About section ─────────────────────────────────────────────────────────────
+
+@Composable
+private fun AboutSection(versionName: String) {
+    Text(
+        text = "About",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            InfoRow(
+                title = "SplitEase",
+                body = "Offline-first shared expense management.",
+            )
+            if (versionName.isNotEmpty()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                )
+                InfoRow(
+                    title = "Version $versionName",
+                    body = null,
+                )
+            }
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            InfoRow(
+                title = "Your data",
+                body = "Your expense data is stored locally on this device. SplitEase works fully offline with no account or cloud dependency.",
+            )
+        }
+    }
+}
+
+// ── Shared informational row ──────────────────────────────────────────────────
+
+/**
+ * A non-interactive informational list item with a required [title] and an optional [body].
+ * The row has a minimum height of 48 dp to satisfy touch-target guidelines even though it
+ * is not clickable — this keeps spacing consistent with the theme option rows above.
+ */
+@Composable
+private fun InfoRow(
+    title: String,
+    body: String?,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) { }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (body != null) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+// ── Individual theme option row ───────────────────────────────────────────────
 
 @Composable
 private fun ThemeOptionRow(
