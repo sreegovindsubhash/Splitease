@@ -7,6 +7,10 @@ sealed class Screen(val route: String) {
 
     data object CreateGroup : Screen("create_group")
 
+    data object EditGroup : Screen("edit_group/{groupId}") {
+        fun createRoute(groupId: Long) = "edit_group/$groupId"
+    }
+
     data object GroupDetails : Screen("group_details/{groupId}") {
         fun createRoute(groupId: Long) = "group_details/$groupId"
     }

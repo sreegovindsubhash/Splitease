@@ -3,6 +3,7 @@ package com.splitease.presentation.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -15,6 +16,9 @@ import com.splitease.data.repository.ThemePreferenceRepository
 import com.splitease.presentation.screens.createGroup.CreateGroupScreen
 import com.splitease.presentation.screens.createGroup.CreateGroupViewModel
 import com.splitease.presentation.screens.createGroup.CreateGroupViewModelFactory
+import com.splitease.presentation.screens.editGroup.EditGroupScreen
+import com.splitease.presentation.screens.editGroup.EditGroupViewModel
+import com.splitease.presentation.screens.editGroup.EditGroupViewModelFactory
 import com.splitease.presentation.screens.groupDetails.GroupDetailsScreen
 import com.splitease.presentation.screens.groupDetails.GroupDetailsViewModel
 import com.splitease.presentation.screens.groupDetails.GroupDetailsViewModelFactory
@@ -84,10 +88,14 @@ fun SplitEaseNavGraph(
             )
         }
 
-        composable(Screen.Groups.route) {
+        composable(Screen.Groups.route) { backStackEntry ->
             val viewModel: GroupsViewModel = viewModel(
                 factory = GroupsViewModelFactory(app.groupRepository),
             )
+            // Consume any one-shot snackbar message left by GroupDetails after deletion
+            val snackbarMessage = backStackEntry.savedStateHandle
+                .getStateFlow<String?>("snackbar_message", null)
+                .collectAsStateWithLifecycle()
             GroupsScreen(
                 viewModel = viewModel,
                 onCreateGroup = { navController.navigate(Screen.CreateGroup.route) },
@@ -95,6 +103,10 @@ fun SplitEaseNavGraph(
                     navController.navigate(Screen.GroupDetails.createRoute(groupId))
                 },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                snackbarMessage = snackbarMessage.value,
+                onSnackbarMessageConsumed = {
+                    backStackEntry.savedStateHandle["snackbar_message"] = null
+                },
             )
         }
 
@@ -124,11 +136,36 @@ fun SplitEaseNavGraph(
             GroupDetailsScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = {
+                    navController.navigate(Screen.EditGroup.createRoute(groupId))
+                },
                 onNavigateToMembers = { navController.navigate(Screen.Members.createRoute(groupId)) },
                 onNavigateToExpenses = { navController.navigate(Screen.Expenses.createRoute(groupId)) },
                 onNavigateToBalances = { navController.navigate(Screen.Balances.createRoute(groupId)) },
                 onNavigateToSettlement = { navController.navigate(Screen.Settlement.createRoute(groupId)) },
                 onNavigateToSummary = { navController.navigate(Screen.Summary.createRoute(groupId)) },
+                onGroupDeleted = {
+                    // Put the snackbar message onto the Groups back-stack entry before navigating
+                    navController.getBackStackEntry(Screen.Groups.route)
+                        .savedStateHandle["snackbar_message"] = "Group deleted"
+                    navController.navigate(Screen.Groups.route) {
+                        popUpTo(Screen.Groups.route) { inclusive = false }
+                    }
+                },
+            )
+        }
+
+        composable(
+            route = Screen.EditGroup.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: return@composable
+            val viewModel: EditGroupViewModel = viewModel(
+                factory = EditGroupViewModelFactory(app.groupRepository, groupId),
+            )
+            EditGroupScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

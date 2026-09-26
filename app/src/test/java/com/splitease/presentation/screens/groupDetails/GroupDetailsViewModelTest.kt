@@ -2,6 +2,7 @@ package com.splitease.presentation.screens.groupDetails
 
 import com.splitease.domain.model.Group
 import com.splitease.domain.repository.GroupRepository
+import com.splitease.domain.usecase.DeleteGroupUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -38,6 +39,7 @@ class GroupDetailsViewModelTest {
 
     private fun buildViewModel(groupId: Long = 1L) = GroupDetailsViewModel(
         groupRepository = fakeRepository,
+        deleteGroupUseCase = DeleteGroupUseCase(fakeRepository),
         groupId = groupId,
     )
 

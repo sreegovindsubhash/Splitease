@@ -1,20 +1,20 @@
-package com.splitease.presentation.screens.groupDetails
+package com.splitease.presentation.screens.editGroup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.splitease.domain.repository.GroupRepository
-import com.splitease.domain.usecase.DeleteGroupUseCase
+import com.splitease.domain.usecase.UpdateGroupUseCase
 
-class GroupDetailsViewModelFactory(
+class EditGroupViewModelFactory(
     private val groupRepository: GroupRepository,
     private val groupId: Long,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(GroupDetailsViewModel::class.java)) {
-            return GroupDetailsViewModel(
+        if (modelClass.isAssignableFrom(EditGroupViewModel::class.java)) {
+            return EditGroupViewModel(
                 groupRepository = groupRepository,
-                deleteGroupUseCase = DeleteGroupUseCase(groupRepository),
+                updateGroupUseCase = UpdateGroupUseCase(groupRepository),
                 groupId = groupId,
             ) as T
         }

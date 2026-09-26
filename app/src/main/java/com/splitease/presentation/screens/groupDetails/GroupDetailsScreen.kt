@@ -21,23 +21,35 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -54,18 +66,36 @@ import com.splitease.presentation.components.AmountText
 fun GroupDetailsScreen(
     viewModel: GroupDetailsViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToEdit: () -> Unit = {},
     onNavigateToMembers: () -> Unit = {},
     onNavigateToExpenses: () -> Unit = {},
     onNavigateToBalances: () -> Unit = {},
     onNavigateToSettlement: () -> Unit = {},
     onNavigateToSummary: () -> Unit = {},
+    onGroupDeleted: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val groupDeleted by viewModel.groupDeleted.collectAsStateWithLifecycle()
+    val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Navigate to Groups and show snackbar after deletion
+    LaunchedEffect(groupDeleted) {
+        if (groupDeleted) {
+            viewModel.onDeletedConsumed()
+            onGroupDeleted()
+        }
+    }
 
     val title = when (val state = uiState) {
         is GroupDetailsUiState.Success -> state.group.name
         else -> "Group Details"
     }
+
+    val currentGroup = (uiState as? GroupDetailsUiState.Success)?.group
 
     Scaffold(
         topBar = {
@@ -90,6 +120,53 @@ fun GroupDetailsScreen(
                         )
                     }
                 },
+                actions = {
+                    if (currentGroup != null) {
+                        Box {
+                            IconButton(
+                                onClick = { menuExpanded = true },
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .semantics { contentDescription = "Group actions" },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = null,
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Edit group") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onNavigateToEdit()
+                                    },
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "Edit group"
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "Delete group",
+                                            color = MaterialTheme.colorScheme.error,
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        showDeleteDialog = true
+                                    },
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "Delete group"
+                                    },
+                                )
+                            }
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
@@ -97,6 +174,7 @@ fun GroupDetailsScreen(
                 ),
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         when (val state = uiState) {
             GroupDetailsUiState.Loading -> GroupDetailsLoadingContent(paddingValues)
@@ -117,6 +195,84 @@ fun GroupDetailsScreen(
             )
         }
     }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog && currentGroup != null) {
+        DeleteGroupConfirmDialog(
+            groupName = currentGroup.name,
+            isDeleting = isDeleting,
+            onConfirm = {
+                showDeleteDialog = false
+                viewModel.deleteGroup()
+            },
+            onDismiss = { showDeleteDialog = false },
+        )
+    }
+}
+
+// ── Delete Confirmation Dialog ─────────────────────────────────────────────────
+
+@Composable
+private fun DeleteGroupConfirmDialog(
+    groupName: String,
+    isDeleting: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isDeleting) onDismiss() },
+        title = {
+            Text(
+                text = "Delete $groupName?",
+                modifier = Modifier.semantics {
+                    contentDescription = "Delete group $groupName"
+                },
+            )
+        },
+        text = {
+            Text(
+                text = "This will permanently delete the group, its members, expenses, splits, and settlement records. This action cannot be undone.",
+                modifier = Modifier.semantics {
+                    contentDescription =
+                        "Warning: This will permanently delete the group, its members, expenses, splits, and settlement records. This action cannot be undone."
+                },
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isDeleting,
+                modifier = Modifier.semantics {
+                    contentDescription = "Confirm delete group"
+                },
+            ) {
+                if (isDeleting) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.error,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(16.dp),
+                    )
+                } else {
+                    Text(
+                        text = "Delete",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isDeleting,
+                modifier = Modifier.semantics {
+                    contentDescription = "Cancel delete group"
+                },
+            ) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 // ── Loading ───────────────────────────────────────────────────────────────────
