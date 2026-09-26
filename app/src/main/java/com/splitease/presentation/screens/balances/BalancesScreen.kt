@@ -58,6 +58,7 @@ import com.splitease.util.MoneyFormatter
 fun BalancesScreen(
     viewModel: BalancesViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToSettlement: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -104,7 +105,11 @@ fun BalancesScreen(
             uiState.errorMessage != null && uiState.balances.isEmpty() ->
                 BalancesErrorContent(paddingValues, uiState.errorMessage!!, onNavigateBack)
             uiState.isEmpty -> BalancesEmptyContent(paddingValues)
-            else -> BalancesListContent(uiState = uiState, paddingValues = paddingValues)
+            else -> BalancesListContent(
+                uiState = uiState,
+                paddingValues = paddingValues,
+                onNavigateToSettlement = onNavigateToSettlement,
+            )
         }
     }
 }
@@ -217,6 +222,7 @@ private fun BalancesEmptyContent(paddingValues: PaddingValues) {
 private fun BalancesListContent(
     uiState: BalancesUiState,
     paddingValues: PaddingValues,
+    onNavigateToSettlement: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(paddingValues),
@@ -234,6 +240,19 @@ private fun BalancesListContent(
                 balance = balance,
                 currencyCode = uiState.currencyCode,
             )
+        }
+
+        // ── Settle Up CTA ─────────────────────────────────────────────────────
+        item {
+            Button(
+                onClick = onNavigateToSettlement,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .semantics { contentDescription = "See settlement suggestions" },
+            ) {
+                Text("Settle Up")
+            }
         }
 
         item { Spacer(Modifier.height(8.dp)) }

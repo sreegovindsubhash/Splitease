@@ -31,6 +31,9 @@ import com.splitease.presentation.screens.balances.BalancesViewModelFactory
 import com.splitease.presentation.screens.members.MembersScreen
 import com.splitease.presentation.screens.members.MembersViewModel
 import com.splitease.presentation.screens.members.MembersViewModelFactory
+import com.splitease.presentation.screens.settlement.SettlementScreen
+import com.splitease.presentation.screens.settlement.SettlementViewModel
+import com.splitease.presentation.screens.settlement.SettlementViewModelFactory
 
 @Composable
 fun SplitEaseNavGraph(
@@ -85,6 +88,7 @@ fun SplitEaseNavGraph(
                 onNavigateToMembers = { navController.navigate(Screen.Members.createRoute(groupId)) },
                 onNavigateToExpenses = { navController.navigate(Screen.Expenses.createRoute(groupId)) },
                 onNavigateToBalances = { navController.navigate(Screen.Balances.createRoute(groupId)) },
+                onNavigateToSettlement = { navController.navigate(Screen.Settlement.createRoute(groupId)) },
             )
         }
 
@@ -166,6 +170,27 @@ fun SplitEaseNavGraph(
                 ),
             )
             BalancesScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToSettlement = { navController.navigate(Screen.Settlement.createRoute(groupId)) },
+            )
+        }
+
+        composable(
+            route = Screen.Settlement.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: return@composable
+            val viewModel: SettlementViewModel = viewModel(
+                factory = SettlementViewModelFactory(
+                    groupId = groupId,
+                    groupRepository = app.groupRepository,
+                    memberRepository = app.memberRepository,
+                    expenseRepository = app.expenseRepository,
+                    settlementPaymentRepository = app.settlementPaymentRepository,
+                ),
+            )
+            SettlementScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
             )

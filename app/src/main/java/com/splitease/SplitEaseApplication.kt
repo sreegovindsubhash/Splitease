@@ -5,9 +5,11 @@ import com.splitease.data.local.database.AppDatabase
 import com.splitease.data.repository.ExpenseRepositoryImpl
 import com.splitease.data.repository.GroupRepositoryImpl
 import com.splitease.data.repository.MemberRepositoryImpl
+import com.splitease.data.repository.SettlementPaymentRepositoryImpl
 import com.splitease.domain.repository.ExpenseRepository
 import com.splitease.domain.repository.GroupRepository
 import com.splitease.domain.repository.MemberRepository
+import com.splitease.domain.repository.SettlementPaymentRepository
 
 /**
  * Application class. Provides manual dependency injection via lazy properties.
@@ -27,5 +29,9 @@ class SplitEaseApplication : Application() {
 
     val expenseRepository: ExpenseRepository by lazy {
         ExpenseRepositoryImpl(database)
+    }
+
+    val settlementPaymentRepository: SettlementPaymentRepository by lazy {
+        SettlementPaymentRepositoryImpl(database.settlementPaymentDao())
     }
 }
