@@ -1,5 +1,6 @@
 package com.splitease.presentation.screens.groupDetails
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.Button
@@ -35,7 +37,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +51,7 @@ import com.splitease.presentation.components.AmountText
 fun GroupDetailsScreen(
     viewModel: GroupDetailsViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToMembers: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -92,6 +97,7 @@ fun GroupDetailsScreen(
             is GroupDetailsUiState.Success -> GroupDetailsSuccessContent(
                 group = state.group,
                 paddingValues = paddingValues,
+                onNavigateToMembers = onNavigateToMembers,
             )
             is GroupDetailsUiState.Error -> GroupDetailsErrorContent(
                 message = state.message,
@@ -210,6 +216,7 @@ private fun GroupDetailsErrorContent(
 private fun GroupDetailsSuccessContent(
     group: Group,
     paddingValues: PaddingValues,
+    onNavigateToMembers: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -220,7 +227,7 @@ private fun GroupDetailsSuccessContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         GroupInfoCard(group = group)
-        GroupStatsCard(group = group)
+        GroupStatsCard(group = group, onNavigateToMembers = onNavigateToMembers)
         GroupEmptyStateCard(group = group)
     }
 }
@@ -279,7 +286,7 @@ private fun GroupInfoCard(group: Group) {
 }
 
 @Composable
-private fun GroupStatsCard(group: Group) {
+private fun GroupStatsCard(group: Group, onNavigateToMembers: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -299,8 +306,16 @@ private fun GroupStatsCard(group: Group) {
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
+            // Members row — tappable to navigate to Members screen
+            val memberLabel = if (group.memberCount == 1) "1 member" else "${group.memberCount} members"
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        onClickLabel = "View members",
+                        onClick = onNavigateToMembers,
+                    )
+                    .semantics { role = Role.Button },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -318,7 +333,7 @@ private fun GroupStatsCard(group: Group) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                val memberLabel = if (group.memberCount == 1) "1 member" else "${group.memberCount} members"
+                Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = memberLabel,
                     style = MaterialTheme.typography.bodyMedium,
@@ -327,6 +342,14 @@ private fun GroupStatsCard(group: Group) {
                         contentDescription = memberLabel
                     },
                 )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                }
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

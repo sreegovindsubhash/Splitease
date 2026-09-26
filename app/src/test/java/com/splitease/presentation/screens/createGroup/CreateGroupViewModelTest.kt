@@ -120,6 +120,8 @@ private class FakeGroupRepository : GroupRepository {
 
     override fun getGroups(): Flow<List<Group>> = flowOf(emptyList())
 
+    override fun observeGroupById(id: Long): Flow<Group?> = flowOf(null)
+
     override suspend fun getGroupById(id: Long): Group? = null
 
     override suspend fun createGroup(group: Group): Long {

@@ -19,6 +19,9 @@ import com.splitease.presentation.screens.groupDetails.GroupDetailsViewModelFact
 import com.splitease.presentation.screens.groups.GroupsScreen
 import com.splitease.presentation.screens.groups.GroupsViewModel
 import com.splitease.presentation.screens.groups.GroupsViewModelFactory
+import com.splitease.presentation.screens.members.MembersScreen
+import com.splitease.presentation.screens.members.MembersViewModel
+import com.splitease.presentation.screens.members.MembersViewModelFactory
 
 @Composable
 fun SplitEaseNavGraph(
@@ -68,6 +71,21 @@ fun SplitEaseNavGraph(
                 factory = GroupDetailsViewModelFactory(app.groupRepository, groupId),
             )
             GroupDetailsScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToMembers = { navController.navigate(Screen.Members.createRoute(groupId)) },
+            )
+        }
+
+        composable(
+            route = Screen.Members.route,
+            arguments = listOf(navArgument("groupId") { type = NavType.LongType }),
+        ) { backStackEntry ->
+            val groupId = backStackEntry.arguments?.getLong("groupId") ?: return@composable
+            val viewModel: MembersViewModel = viewModel(
+                factory = MembersViewModelFactory(app.memberRepository, groupId),
+            )
+            MembersScreen(
                 viewModel = viewModel,
                 onNavigateBack = { navController.popBackStack() },
             )

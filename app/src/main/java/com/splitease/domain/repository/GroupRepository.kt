@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface GroupRepository {
     fun getGroups(): Flow<List<Group>>
+    fun observeGroupById(id: Long): Flow<Group?>
     suspend fun getGroupById(id: Long): Group?
     suspend fun createGroup(group: Group): Long
     suspend fun updateGroup(group: Group)

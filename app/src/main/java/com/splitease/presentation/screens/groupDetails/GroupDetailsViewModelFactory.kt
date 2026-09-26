@@ -3,7 +3,6 @@ package com.splitease.presentation.screens.groupDetails
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.splitease.domain.repository.GroupRepository
-import com.splitease.domain.usecase.GetGroupByIdUseCase
 
 class GroupDetailsViewModelFactory(
     private val groupRepository: GroupRepository,
@@ -13,7 +12,7 @@ class GroupDetailsViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(GroupDetailsViewModel::class.java)) {
             return GroupDetailsViewModel(
-                getGroupByIdUseCase = GetGroupByIdUseCase(groupRepository),
+                groupRepository = groupRepository,
                 groupId = groupId,
             ) as T
         }

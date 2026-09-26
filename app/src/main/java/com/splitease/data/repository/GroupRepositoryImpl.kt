@@ -17,6 +17,9 @@ class GroupRepositoryImpl(
     override fun getGroups(): Flow<List<Group>> =
         groupDao.getGroupsWithStats().map { list -> list.map { it.toDomain() } }
 
+    override fun observeGroupById(id: Long): Flow<Group?> =
+        groupDao.getGroupWithStatsById(id).map { it?.toDomain() }
+
     override suspend fun getGroupById(id: Long): Group? =
         groupDao.getGroupById(id)?.toDomain()
 

@@ -2,11 +2,12 @@ package com.splitease.presentation.screens.groupDetails
 
 import com.splitease.domain.model.Group
 import com.splitease.domain.repository.GroupRepository
-import com.splitease.domain.usecase.GetGroupByIdUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -36,7 +37,7 @@ class GroupDetailsViewModelTest {
     }
 
     private fun buildViewModel(groupId: Long = 1L) = GroupDetailsViewModel(
-        getGroupByIdUseCase = GetGroupByIdUseCase(fakeRepository),
+        groupRepository = fakeRepository,
         groupId = groupId,
     )
 
@@ -186,7 +187,16 @@ private class FakeGroupRepository : GroupRepository {
     var shouldThrow: Boolean = false
     var errorMessage: String = "Unexpected error"
 
+    /** Backing StateFlow so tests can trigger reactive updates. */
+    private val _groupsFlow = MutableStateFlow<Map<Long, Group>>(emptyMap())
+
     override fun getGroups(): Flow<List<Group>> = flowOf(groups.values.toList())
+
+    override fun observeGroupById(id: Long): Flow<Group?> {
+        if (shouldThrow) throw RuntimeException(errorMessage)
+        // Emit from the current map snapshot so the fake behaves like a cold Flow.
+        return flowOf(groups[id])
+    }
 
     override suspend fun getGroupById(id: Long): Group? {
         if (shouldThrow) throw RuntimeException(errorMessage)
@@ -194,9 +204,9 @@ private class FakeGroupRepository : GroupRepository {
     }
 
     override suspend fun createGroup(group: Group): Long {
-        val id = (groups.keys.maxOrNull() ?: 0L) + 1L
-        groups[id] = group.copy(id = id)
-        return id
+        val newId = (groups.keys.maxOrNull() ?: 0L) + 1L
+        groups[newId] = group.copy(id = newId)
+        return newId
     }
 
     override suspend fun updateGroup(group: Group) {
