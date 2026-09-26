@@ -1,5 +1,6 @@
 package com.splitease.data.local.mapper
 
+import com.splitease.data.local.dao.GroupWithStats
 import com.splitease.data.local.entity.GroupEntity
 import com.splitease.domain.model.Group
 import org.junit.Assert.assertEquals
@@ -57,5 +58,80 @@ class GroupMapperTest {
         )
         val roundTripped = original.toDomain().toEntity()
         assertEquals(original, roundTripped)
+    }
+}
+
+class GroupWithStatsMappingTest {
+
+    /**
+     * Regression: before the SQL fix, the query joined members and expenses without
+     * sub-aggregation, causing SUM(expenses.amount) to be multiplied by the number of
+     * members.  This test pins the mapper contract: total_amount must flow through
+     * unchanged regardless of member_count.
+     *
+     * Scenario: 3 members, 1 expense = 60 000 minor units (₹600).
+     * Expected: memberCount = 3, totalAmountMinorUnits = 60 000 (NOT 180 000).
+     */
+    @Test
+    fun `GroupWithStats toDomain does not multiply totalAmount by memberCount`() {
+        val stats = GroupWithStats(
+            id = 1L,
+            name = "Goa Trip",
+            description = "",
+            currencyCode = "INR",
+            createdAt = 1_000L,
+            updatedAt = 2_000L,
+            member_count = 3,
+            total_amount = 60_000L,
+        )
+
+        val group = stats.toDomain()
+
+        assertEquals(3, group.memberCount)
+        assertEquals(60_000L, group.totalAmountMinorUnits)
+    }
+
+    @Test
+    fun `GroupWithStats toDomain with zero members and zero expenses`() {
+        val stats = GroupWithStats(
+            id = 2L,
+            name = "Empty Group",
+            description = "",
+            currencyCode = "USD",
+            createdAt = 0L,
+            updatedAt = 0L,
+            member_count = 0,
+            total_amount = 0L,
+        )
+
+        val group = stats.toDomain()
+
+        assertEquals(0, group.memberCount)
+        assertEquals(0L, group.totalAmountMinorUnits)
+    }
+
+    @Test
+    fun `GroupWithStats toDomain preserves all scalar fields`() {
+        val stats = GroupWithStats(
+            id = 42L,
+            name = "Hostel 204",
+            description = "Second year room",
+            currencyCode = "EUR",
+            createdAt = 100L,
+            updatedAt = 200L,
+            member_count = 5,
+            total_amount = 120_000L,
+        )
+
+        val group = stats.toDomain()
+
+        assertEquals(42L, group.id)
+        assertEquals("Hostel 204", group.name)
+        assertEquals("Second year room", group.description)
+        assertEquals("EUR", group.currencyCode)
+        assertEquals(100L, group.createdAt)
+        assertEquals(200L, group.updatedAt)
+        assertEquals(5, group.memberCount)
+        assertEquals(120_000L, group.totalAmountMinorUnits)
     }
 }

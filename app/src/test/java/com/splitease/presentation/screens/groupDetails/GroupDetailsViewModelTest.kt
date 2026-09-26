@@ -87,6 +87,43 @@ class GroupDetailsViewModelTest {
         assertEquals(150_00L, state.group.totalAmountMinorUnits)
     }
 
+    // ── Regression: member count must not multiply total expenses ─────────────
+
+    /**
+     * Regression test for the GroupDao aggregation bug.
+     *
+     * Before the fix: joining members and expenses in a single flat query caused
+     * SUM(expenses.amount_minor_units) to be multiplied by the number of members.
+     *
+     * Scenario: 3 members, 1 expense = 60 000 minor units (₹600).
+     * Expected: memberCount = 3, totalAmountMinorUnits = 60 000 (not 180 000).
+     *
+     * The repository layer (GroupWithStats.toDomain) maps total_amount directly,
+     * so this test pins the end-to-end ViewModel contract.
+     */
+    @Test
+    fun multipleMembersDoNotMultiplyTotalExpenseAmount() = runTest {
+        val group = makeGroup(
+            id = 3L,
+            name = "Goa Trip",
+            memberCount = 3,
+            totalAmountMinorUnits = 60_000L, // ₹600 — must NOT become ₹1 800
+        )
+        fakeRepository.groups[3L] = group
+
+        val viewModel = buildViewModel(groupId = 3L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as GroupDetailsUiState.Success
+        assertEquals(3, state.group.memberCount)
+        assertEquals(
+            60_000L,
+            state.group.totalAmountMinorUnits,
+            "Expected ₹600 (60 000 minor units) but got ${state.group.totalAmountMinorUnits}. " +
+                    "Member count must not multiply the expense total.",
+        )
+    }
+
     // ── Not found ─────────────────────────────────────────────────────────────
 
     @Test

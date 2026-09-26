@@ -16,12 +16,19 @@ interface GroupDao {
     @Query(
         """
         SELECT g.*,
-               COUNT(DISTINCT m.id) AS member_count,
-               COALESCE(SUM(e.amount_minor_units), 0) AS total_amount
+               COALESCE(mc.member_count, 0) AS member_count,
+               COALESCE(ec.total_amount, 0) AS total_amount
         FROM groups g
-        LEFT JOIN members m ON m.group_id = g.id
-        LEFT JOIN expenses e ON e.group_id = g.id
-        GROUP BY g.id
+        LEFT JOIN (
+            SELECT group_id, COUNT(*) AS member_count
+            FROM members
+            GROUP BY group_id
+        ) mc ON mc.group_id = g.id
+        LEFT JOIN (
+            SELECT group_id, SUM(amount_minor_units) AS total_amount
+            FROM expenses
+            GROUP BY group_id
+        ) ec ON ec.group_id = g.id
         ORDER BY g.updated_at DESC
         """
     )
@@ -33,13 +40,20 @@ interface GroupDao {
     @Query(
         """
         SELECT g.*,
-               COUNT(DISTINCT m.id) AS member_count,
-               COALESCE(SUM(e.amount_minor_units), 0) AS total_amount
+               COALESCE(mc.member_count, 0) AS member_count,
+               COALESCE(ec.total_amount, 0) AS total_amount
         FROM groups g
-        LEFT JOIN members m ON m.group_id = g.id
-        LEFT JOIN expenses e ON e.group_id = g.id
+        LEFT JOIN (
+            SELECT group_id, COUNT(*) AS member_count
+            FROM members
+            GROUP BY group_id
+        ) mc ON mc.group_id = g.id
+        LEFT JOIN (
+            SELECT group_id, SUM(amount_minor_units) AS total_amount
+            FROM expenses
+            GROUP BY group_id
+        ) ec ON ec.group_id = g.id
         WHERE g.id = :id
-        GROUP BY g.id
         """
     )
     fun getGroupWithStatsById(id: Long): Flow<GroupWithStats?>
