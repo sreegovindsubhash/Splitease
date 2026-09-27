@@ -334,6 +334,28 @@ class AddEditExpenseViewModelTest {
         assertEquals(10000L, state.splitPreview.values.sum())
     }
 
+    @Test
+    fun sharesSplit_defaultOnePerParticipant_isValidWithoutUserInput() = runTest {
+        // Regression: switching to Shares without touching any share field must
+        // be immediately valid because the ViewModel pre-populates "1" for every
+        // participant on load, matching what the UI displays as the default value.
+        val vm = buildAddViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        vm.onAmountChange("100")
+        vm.onSplitMethodSelected(SplitMethod.SHARES)
+        // Deliberately do NOT call onSharesChanged — verify default state is valid.
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(
+            state.isSplitValid,
+            "Expected isSplitValid=true with default share of 1 per participant, " +
+                "but got isSplitValid=${state.isSplitValid}, message='${state.splitValidationMessage}'",
+        )
+        assertEquals(10_000L, state.splitPreview.values.sum())
+    }
+
     // ── Duplicate submission prevention ───────────────────────────────────────
 
     @Test

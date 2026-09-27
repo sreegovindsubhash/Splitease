@@ -69,10 +69,14 @@ class AddEditExpenseViewModel(
                 } else {
                     // Default: select all members as participants
                     val allIds = members.map { it.id }.toSet()
+                    // Pre-populate sharesInputs with "1" so the SHARES split method
+                    // is valid immediately without the user having to touch any field.
+                    val defaultShares = allIds.associateWith { "1" }
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             selectedParticipantIds = allIds,
+                            sharesInputs = defaultShares,
                         ).recomputeSplit()
                     }
                 }

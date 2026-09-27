@@ -694,7 +694,7 @@ private fun SharesSplitInputs(
                     value = inputs[member.id] ?: "1",
                     onValueChange = { onChanged(member.id, it) },
                     placeholder = { Text("1") },
-                    suffix = { Text("share") },
+                    suffix = { Text("Share") },
                     singleLine = true,
                     enabled = enabled,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

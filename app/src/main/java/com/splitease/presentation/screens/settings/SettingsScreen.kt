@@ -272,6 +272,14 @@ private fun AboutSection(versionName: String) {
                 title = "Your data",
                 body = "Your expense data is stored locally on this device. SplitEase works fully offline with no account or cloud dependency.",
             )
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            InfoRow(
+                title = "App icon",
+                body = "Hazicon Glyph icon by Hazicon from www.flaticon.com (Flaticon Free License).",
+            )
         }
     }
 }
