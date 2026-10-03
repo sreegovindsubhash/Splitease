@@ -104,17 +104,34 @@ reboot.
 
 ## Architecture
 
-SplitEase uses a simple layered architecture:
+## Architecture
+
+SplitEase follows a layered architecture with a clear separation between
+the UI, application logic, and local data layer.
 
 ```text
-Presentation
-    ↓
-Domain / Use Cases
-    ↓
-Repository
-    ↓
-Room Database
-```
+┌─────────────────────────────────────────────┐
+│ Presentation                                │
+│                                             │
+│ Jetpack Compose · ViewModel · StateFlow     │
+│ Screens · UI State · Navigation             │
+└──────────────────────┬──────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────┐
+│ Domain                                      │
+│                                             │
+│ Use Cases · Domain Models · Business Logic  │
+│ Expense Splitting · Balances · Settlements  │
+└──────────────────────┬──────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────┐
+│ Data                                        │
+│                                             │
+│ Repository · Room DAO · Room Entities       │
+│ Local Database · Database Migrations        │
+└─────────────────────────────────────────────┘
 
 The UI is built with Jetpack Compose. `ViewModel` and `StateFlow` are used for
 UI state, while business logic such as expense splitting, balance calculation,
