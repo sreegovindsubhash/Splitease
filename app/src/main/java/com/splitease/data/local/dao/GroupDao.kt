@@ -78,4 +78,5 @@ data class GroupWithStats(
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     val member_count: Int,
     val total_amount: Long,
+    @ColumnInfo(name = "budget_minor_units") val budget_minor_units: Long? = null,
 )

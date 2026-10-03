@@ -1,8 +1,14 @@
 package com.splitease.presentation.screens.groupDetails
 
+import com.splitease.domain.model.Expense
+import com.splitease.domain.model.ExpenseCategory
+import com.splitease.domain.model.ExpenseSplit
 import com.splitease.domain.model.Group
+import com.splitease.domain.model.SplitMethod
+import com.splitease.domain.repository.ExpenseRepository
 import com.splitease.domain.repository.GroupRepository
 import com.splitease.domain.usecase.DeleteGroupUseCase
+import com.splitease.domain.usecase.SetGroupBudgetUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +31,7 @@ class GroupDetailsViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var fakeRepository: FakeGroupRepository
+    private val fakeExpenseRepository = NoOpExpenseRepository()
 
     @BeforeTest
     fun setUp() {
@@ -39,7 +46,9 @@ class GroupDetailsViewModelTest {
 
     private fun buildViewModel(groupId: Long = 1L) = GroupDetailsViewModel(
         groupRepository = fakeRepository,
+        expenseRepository = fakeExpenseRepository,
         deleteGroupUseCase = DeleteGroupUseCase(fakeRepository),
+        setGroupBudgetUseCase = SetGroupBudgetUseCase(fakeRepository),
         groupId = groupId,
     )
 
@@ -255,4 +264,16 @@ private class FakeGroupRepository : GroupRepository {
     override suspend fun deleteGroup(group: Group) {
         groups.remove(group.id)
     }
+}
+
+// ── No-op expense repository for tests that don't care about expenses ─────────
+
+private class NoOpExpenseRepository : ExpenseRepository {
+    override fun getExpensesForGroup(groupId: Long): Flow<List<Expense>> = flowOf(emptyList())
+    override suspend fun getExpenseById(id: Long): Expense? = null
+    override fun getSplitsForExpense(expenseId: Long): Flow<List<ExpenseSplit>> = flowOf(emptyList())
+    override fun getSplitsForGroup(groupId: Long): Flow<List<ExpenseSplit>> = flowOf(emptyList())
+    override suspend fun addExpense(expense: Expense, splits: List<ExpenseSplit>): Long = 0L
+    override suspend fun updateExpense(expense: Expense, splits: List<ExpenseSplit>) {}
+    override suspend fun deleteExpense(expense: Expense) {}
 }

@@ -135,3 +135,96 @@ class GroupWithStatsMappingTest {
         assertEquals(120_000L, group.totalAmountMinorUnits)
     }
 }
+
+class GroupBudgetMapperTest {
+
+    @Test
+    fun `GroupEntity toDomain preserves budgetMinorUnits when set`() {
+        val entity = GroupEntity(
+            id = 1L,
+            name = "Trip",
+            description = "",
+            currencyCode = "INR",
+            createdAt = 1L,
+            updatedAt = 2L,
+            budgetMinorUnits = 50_000L,
+        )
+        val group = entity.toDomain()
+        assertEquals(50_000L, group.budgetMinorUnits)
+    }
+
+    @Test
+    fun `GroupEntity toDomain with null budget yields null budgetMinorUnits`() {
+        val entity = GroupEntity(
+            id = 1L,
+            name = "Trip",
+            description = "",
+            currencyCode = "INR",
+            createdAt = 1L,
+            updatedAt = 2L,
+            budgetMinorUnits = null,
+        )
+        val group = entity.toDomain()
+        org.junit.Assert.assertNull(group.budgetMinorUnits)
+    }
+
+    @Test
+    fun `Group toEntity preserves budgetMinorUnits`() {
+        val group = Group(
+            id = 1L,
+            name = "Trip",
+            description = "",
+            currencyCode = "INR",
+            budgetMinorUnits = 100_00L,
+        )
+        val entity = group.toEntity()
+        assertEquals(100_00L, entity.budgetMinorUnits)
+    }
+
+    @Test
+    fun `Group toEntity with null budget preserves null`() {
+        val group = Group(
+            id = 1L,
+            name = "Trip",
+            description = "",
+            currencyCode = "INR",
+            budgetMinorUnits = null,
+        )
+        val entity = group.toEntity()
+        org.junit.Assert.assertNull(entity.budgetMinorUnits)
+    }
+
+    @Test
+    fun `GroupWithStats toDomain preserves budgetMinorUnits`() {
+        val stats = GroupWithStats(
+            id = 1L,
+            name = "Trip",
+            description = "",
+            currencyCode = "INR",
+            createdAt = 1L,
+            updatedAt = 2L,
+            member_count = 2,
+            total_amount = 10_000L,
+            budget_minor_units = 50_000L,
+        )
+        val group = stats.toDomain()
+        assertEquals(50_000L, group.budgetMinorUnits)
+    }
+
+    @Test
+    fun `GroupWithStats toDomain null budget yields null`() {
+        val stats = GroupWithStats(
+            id = 1L,
+            name = "Trip",
+            description = "",
+            currencyCode = "INR",
+            createdAt = 1L,
+            updatedAt = 2L,
+            member_count = 0,
+            total_amount = 0L,
+            budget_minor_units = null,
+        )
+        val group = stats.toDomain()
+        org.junit.Assert.assertNull(group.budgetMinorUnits)
+    }
+}

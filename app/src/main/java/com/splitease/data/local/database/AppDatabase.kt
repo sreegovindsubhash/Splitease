@@ -25,7 +25,7 @@ import com.splitease.data.local.entity.SettlementPaymentEntity
         ExpenseSplitEntity::class,
         SettlementPaymentEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -86,6 +86,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Version 3 → 4: adds optional budget_minor_units column to `groups`.
+         * Existing groups receive NULL (no budget configured). No data is lost.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `groups` ADD COLUMN `budget_minor_units` INTEGER DEFAULT NULL"
+                )
+            }
+        }
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -96,7 +108,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME,
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }

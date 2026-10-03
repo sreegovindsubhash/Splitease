@@ -8,7 +8,11 @@ import com.splitease.domain.model.Group
  */
 sealed interface GroupDetailsUiState {
     data object Loading : GroupDetailsUiState
-    data class Success(val group: Group) : GroupDetailsUiState
+    data class Success(
+        val group: Group,
+        /** Sum of all expense amounts for this group (excludes settlement payments). */
+        val totalSpentMinorUnits: Long = 0L,
+    ) : GroupDetailsUiState
     data object NotFound : GroupDetailsUiState
     data class Error(val message: String) : GroupDetailsUiState
 }

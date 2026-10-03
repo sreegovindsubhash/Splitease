@@ -24,4 +24,8 @@ data class GroupEntity(
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long = System.currentTimeMillis(),
+
+    /** Optional group-level budget stored as Long minor units. Null = no budget set. */
+    @ColumnInfo(name = "budget_minor_units")
+    val budgetMinorUnits: Long? = null,
 )

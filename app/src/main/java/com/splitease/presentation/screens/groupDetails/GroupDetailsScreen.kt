@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -35,7 +36,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -56,10 +59,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.splitease.domain.model.Group
 import com.splitease.presentation.components.AmountText
+import com.splitease.util.MoneyFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +82,7 @@ fun GroupDetailsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val groupDeleted by viewModel.groupDeleted.collectAsStateWithLifecycle()
     val isDeleting by viewModel.isDeleting.collectAsStateWithLifecycle()
+    val showBudgetDialog by viewModel.showBudgetDialog.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -181,12 +187,14 @@ fun GroupDetailsScreen(
             GroupDetailsUiState.NotFound -> GroupDetailsNotFoundContent(paddingValues, onNavigateBack)
             is GroupDetailsUiState.Success -> GroupDetailsSuccessContent(
                 group = state.group,
+                totalSpentMinorUnits = state.totalSpentMinorUnits,
                 paddingValues = paddingValues,
                 onNavigateToMembers = onNavigateToMembers,
                 onNavigateToExpenses = onNavigateToExpenses,
                 onNavigateToBalances = onNavigateToBalances,
                 onNavigateToSettlement = onNavigateToSettlement,
                 onNavigateToSummary = onNavigateToSummary,
+                onSetBudget = viewModel::onSetBudgetClicked,
             )
             is GroupDetailsUiState.Error -> GroupDetailsErrorContent(
                 message = state.message,
@@ -206,6 +214,16 @@ fun GroupDetailsScreen(
                 viewModel.deleteGroup()
             },
             onDismiss = { showDeleteDialog = false },
+        )
+    }
+
+    // Budget dialog
+    if (showBudgetDialog && currentGroup != null) {
+        SetBudgetDialog(
+            existingBudgetMinorUnits = currentGroup.budgetMinorUnits,
+            currencyCode = currentGroup.currencyCode,
+            onConfirm = { input -> viewModel.onBudgetConfirmed(input) },
+            onDismiss = viewModel::onBudgetDialogDismiss,
         )
     }
 }
@@ -268,6 +286,95 @@ private fun DeleteGroupConfirmDialog(
                 modifier = Modifier.semantics {
                     contentDescription = "Cancel delete group"
                 },
+            ) {
+                Text("Cancel")
+            }
+        },
+    )
+}
+
+// ── Set / Edit Budget Dialog ───────────────────────────────────────────────────
+
+/**
+ * Dialog for setting or replacing the group budget.
+ * [onConfirm] receives the raw amount-input string and returns a validation error
+ * message string (non-null) if invalid, or null on success/accepted.
+ */
+@Composable
+private fun SetBudgetDialog(
+    existingBudgetMinorUnits: Long?,
+    currencyCode: String,
+    onConfirm: (String) -> String?,
+    onDismiss: () -> Unit,
+) {
+    var input by rememberSaveable {
+        mutableStateOf(
+            if (existingBudgetMinorUnits != null) {
+                val major = existingBudgetMinorUnits / 100L
+                val frac = existingBudgetMinorUnits % 100L
+                "$major.${frac.toString().padStart(2, '0')}"
+            } else {
+                ""
+            },
+        )
+    }
+    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val isEdit = existingBudgetMinorUnits != null
+    val title = if (isEdit) "Edit Budget" else "Set Budget"
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = title,
+                modifier = Modifier.semantics { contentDescription = title },
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it; errorMessage = null },
+                    label = { Text("Budget amount") },
+                    placeholder = { Text("0.00") },
+                    isError = errorMessage != null,
+                    supportingText = {
+                        if (errorMessage != null) {
+                            Text(
+                                text = errorMessage!!,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.semantics {
+                                    contentDescription = "Error: $errorMessage"
+                                },
+                            )
+                        } else {
+                            Text(currencyCode)
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = "Budget amount field" },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val err = onConfirm(input)
+                    errorMessage = err
+                },
+                modifier = Modifier.semantics { contentDescription = "Save budget" },
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.semantics { contentDescription = "Cancel budget" },
             ) {
                 Text("Cancel")
             }
@@ -382,12 +489,14 @@ private fun GroupDetailsErrorContent(
 @Composable
 private fun GroupDetailsSuccessContent(
     group: Group,
+    totalSpentMinorUnits: Long,
     paddingValues: PaddingValues,
     onNavigateToMembers: () -> Unit,
     onNavigateToExpenses: () -> Unit,
     onNavigateToBalances: () -> Unit,
     onNavigateToSettlement: () -> Unit,
     onNavigateToSummary: () -> Unit,
+    onSetBudget: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -398,6 +507,11 @@ private fun GroupDetailsSuccessContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         GroupInfoCard(group = group)
+        GroupBudgetCard(
+            group = group,
+            totalSpentMinorUnits = totalSpentMinorUnits,
+            onSetBudget = onSetBudget,
+        )
         GroupStatsCard(
             group = group,
             onNavigateToMembers = onNavigateToMembers,
@@ -407,6 +521,155 @@ private fun GroupDetailsSuccessContent(
             onNavigateToSummary = onNavigateToSummary,
         )
         GroupEmptyStateCard(group = group)
+    }
+}
+
+// ── Budget Card ───────────────────────────────────────────────────────────────
+
+@Composable
+private fun GroupBudgetCard(
+    group: Group,
+    totalSpentMinorUnits: Long,
+    onSetBudget: () -> Unit,
+) {
+    val budget = group.budgetMinorUnits
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Budget",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                TextButton(
+                    onClick = onSetBudget,
+                    modifier = Modifier.semantics {
+                        contentDescription = if (budget == null) "Set Budget" else "Edit Budget"
+                    },
+                ) {
+                    Text(
+                        text = if (budget == null) "Set Budget" else "Edit Budget",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+
+            if (budget == null) {
+                Text(
+                    text = "No budget set",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.semantics {
+                        contentDescription = "No budget set"
+                    },
+                )
+            } else {
+                // Spending progress — cap at 1f
+                val spentCapped = totalSpentMinorUnits.coerceAtMost(budget)
+                val progress = if (budget > 0L) {
+                    (spentCapped.toDouble() / budget.toDouble()).toFloat().coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                val isOverBudget = totalSpentMinorUnits > budget
+
+                // Budget row
+                BudgetRow(
+                    label = "Budget",
+                    amountMinorUnits = budget,
+                    currencyCode = group.currencyCode,
+                )
+                // Spent row
+                BudgetRow(
+                    label = "Spent",
+                    amountMinorUnits = totalSpentMinorUnits,
+                    currencyCode = group.currencyCode,
+                )
+
+                if (isOverBudget) {
+                    val overAmount = totalSpentMinorUnits - budget
+                    BudgetRow(
+                        label = "Over budget",
+                        amountMinorUnits = overAmount,
+                        currencyCode = group.currencyCode,
+                        labelColor = MaterialTheme.colorScheme.error,
+                        amountColor = MaterialTheme.colorScheme.error,
+                    )
+                } else {
+                    val remaining = budget - totalSpentMinorUnits
+                    BudgetRow(
+                        label = "Remaining",
+                        amountMinorUnits = remaining,
+                        currencyCode = group.currencyCode,
+                    )
+                }
+
+                val progressDescription = buildString {
+                    val pct = (progress * 100).toInt()
+                    append("Spending progress: $pct%")
+                    if (isOverBudget) append(", over budget")
+                }
+
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = progressDescription },
+                    color = if (isOverBudget) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BudgetRow(
+    label: String,
+    amountMinorUnits: Long,
+    currencyCode: String,
+    labelColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    amountColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    val formatted = MoneyFormatter.format(amountMinorUnits, currencyCode)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = labelColor,
+        )
+        Text(
+            text = formatted,
+            style = MaterialTheme.typography.bodyMedium,
+            color = amountColor,
+            modifier = Modifier.semantics {
+                contentDescription = "$label: $formatted"
+            },
+        )
     }
 }
 

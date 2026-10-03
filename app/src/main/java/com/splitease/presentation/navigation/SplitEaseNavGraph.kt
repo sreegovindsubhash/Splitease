@@ -138,7 +138,11 @@ fun SplitEaseNavGraph(
         ) { backStackEntry ->
             val groupId = backStackEntry.arguments?.getLong("groupId") ?: return@composable
             val viewModel: GroupDetailsViewModel = viewModel(
-                factory = GroupDetailsViewModelFactory(app.groupRepository, groupId),
+                factory = GroupDetailsViewModelFactory(
+                    groupRepository = app.groupRepository,
+                    expenseRepository = app.expenseRepository,
+                    groupId = groupId,
+                ),
             )
             val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
             GroupDetailsScreen(

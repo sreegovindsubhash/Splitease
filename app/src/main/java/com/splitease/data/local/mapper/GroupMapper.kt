@@ -11,6 +11,7 @@ fun GroupEntity.toDomain(): Group = Group(
     currencyCode = currencyCode,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    budgetMinorUnits = budgetMinorUnits,
 )
 
 fun GroupWithStats.toDomain(): Group = Group(
@@ -22,6 +23,7 @@ fun GroupWithStats.toDomain(): Group = Group(
     updatedAt = updatedAt,
     memberCount = member_count,
     totalAmountMinorUnits = total_amount,
+    budgetMinorUnits = budget_minor_units,
 )
 
 fun Group.toEntity(): GroupEntity = GroupEntity(
@@ -31,4 +33,5 @@ fun Group.toEntity(): GroupEntity = GroupEntity(
     currencyCode = currencyCode,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    budgetMinorUnits = budgetMinorUnits,
 )

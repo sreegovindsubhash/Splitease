@@ -13,4 +13,6 @@ data class Group(
     val updatedAt: Long = System.currentTimeMillis(),
     val memberCount: Int = 0,
     val totalAmountMinorUnits: Long = 0L,
+    /** Optional group-level budget stored as Long minor units. Null = no budget set. */
+    val budgetMinorUnits: Long? = null,
 )
