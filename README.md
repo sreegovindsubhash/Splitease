@@ -25,6 +25,7 @@ Jetpack Compose, and Material 3.
 -   [Project Structure](#project-structure)
 -   [Building and Running](#building-and-running)
 -   [Scope and Limitations](#scope-and-limitations)
+-   [Icon Attribution](#Icon-Attribution)
 
 ------------------------------------------------------------------------
 
