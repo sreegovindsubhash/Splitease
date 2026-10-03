@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.splitease.notifications.ReminderAlarmReceiver
 import com.splitease.presentation.navigation.Screen
 import com.splitease.presentation.navigation.SplitEaseNavGraph
 import com.splitease.presentation.theme.AppTheme
@@ -18,6 +19,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val app = application as SplitEaseApplication
+        // Determine if this Activity was launched by tapping a reminder notification.
+        val openReminders = intent?.getBooleanExtra(ReminderAlarmReceiver.EXTRA_OPEN_REMINDERS, false) ?: false
 
         setContent {
             // Observe the persisted theme preference reactively.
@@ -35,10 +38,10 @@ class MainActivity : ComponentActivity() {
             SplitEaseTheme(appTheme = appTheme) {
                 // Wait for the onboarding flag before composing the graph.
                 val completed = onboardingCompleted ?: return@SplitEaseTheme
-                val startDestination = if (completed) {
-                    Screen.Groups.route
-                } else {
-                    Screen.Onboarding.route
+                val startDestination = when {
+                    openReminders -> Screen.Reminders.route
+                    completed -> Screen.Groups.route
+                    else -> Screen.Onboarding.route
                 }
                 SplitEaseNavGraph(
                     startDestination = startDestination,

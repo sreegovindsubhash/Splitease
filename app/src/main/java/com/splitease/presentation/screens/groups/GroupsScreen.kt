@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Card
@@ -53,6 +54,7 @@ fun GroupsScreen(
     onCreateGroup: () -> Unit,
     onGroupClick: (Long) -> Unit,
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToReminders: () -> Unit = {},
     snackbarMessage: String? = null,
     onSnackbarMessageConsumed: () -> Unit = {},
 ) {
@@ -77,6 +79,17 @@ fun GroupsScreen(
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = onNavigateToReminders,
+                        modifier = Modifier.semantics {
+                            contentDescription = "Reminders"
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsNone,
+                            contentDescription = null,
+                        )
+                    }
                     IconButton(
                         onClick = onNavigateToSettings,
                         modifier = Modifier.semantics {

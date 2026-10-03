@@ -5,13 +5,16 @@ import com.splitease.data.local.database.AppDatabase
 import com.splitease.data.repository.ExpenseRepositoryImpl
 import com.splitease.data.repository.GroupRepositoryImpl
 import com.splitease.data.repository.MemberRepositoryImpl
+import com.splitease.data.repository.ReminderRepositoryImpl
 import com.splitease.data.repository.SettlementPaymentRepositoryImpl
 import com.splitease.data.repository.OnboardingPreferenceRepository
 import com.splitease.data.repository.ThemePreferenceRepository
 import com.splitease.domain.repository.ExpenseRepository
 import com.splitease.domain.repository.GroupRepository
 import com.splitease.domain.repository.MemberRepository
+import com.splitease.domain.repository.ReminderRepository
 import com.splitease.domain.repository.SettlementPaymentRepository
+import com.splitease.notifications.ReminderNotificationScheduler
 
 /**
  * Application class. Provides manual dependency injection via lazy properties.
@@ -37,11 +40,20 @@ class SplitEaseApplication : Application() {
         SettlementPaymentRepositoryImpl(database.settlementPaymentDao())
     }
 
+    val reminderRepository: ReminderRepository by lazy {
+        ReminderRepositoryImpl(database.reminderDao())
+    }
+
     val themePreferenceRepository: ThemePreferenceRepository by lazy {
         ThemePreferenceRepository(this)
     }
 
     val onboardingPreferenceRepository: OnboardingPreferenceRepository by lazy {
         OnboardingPreferenceRepository(this)
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        ReminderNotificationScheduler.createChannel(this)
     }
 }

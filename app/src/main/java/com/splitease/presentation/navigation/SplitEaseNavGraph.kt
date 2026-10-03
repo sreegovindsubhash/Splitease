@@ -43,6 +43,9 @@ import com.splitease.presentation.screens.settlement.SettlementViewModelFactory
 import com.splitease.presentation.screens.onboarding.OnboardingScreen
 import com.splitease.presentation.screens.onboarding.OnboardingViewModel
 import com.splitease.presentation.screens.onboarding.OnboardingViewModelFactory
+import com.splitease.presentation.screens.reminders.RemindersScreen
+import com.splitease.presentation.screens.reminders.RemindersViewModel
+import com.splitease.presentation.screens.reminders.RemindersViewModelFactory
 import com.splitease.presentation.screens.settings.SettingsScreen
 import com.splitease.presentation.screens.summary.SummaryScreen
 import com.splitease.presentation.screens.summary.SummaryViewModel
@@ -109,6 +112,7 @@ fun SplitEaseNavGraph(
                     navController.navigate(Screen.GroupDetails.createRoute(groupId))
                 },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onNavigateToReminders = { navController.navigate(Screen.Reminders.route) },
                 snackbarMessage = snackbarMessage.value,
                 onSnackbarMessageConsumed = {
                     backStackEntry.savedStateHandle["snackbar_message"] = null
@@ -316,6 +320,17 @@ fun SplitEaseNavGraph(
                 onNavigateToAddExpense = {
                     navController.navigate(Screen.AddEditExpense.createRoute(groupId, 0L))
                 },
+            )
+        }
+
+        composable(Screen.Reminders.route) {
+            val viewModel: RemindersViewModel = viewModel(
+                factory = RemindersViewModelFactory(app.reminderRepository, context),
+            )
+            val guardedBack = rememberSingleEventHandler(backThrottleState) { navController.safePopBackStack() }
+            RemindersScreen(
+                viewModel = viewModel,
+                onNavigateBack = guardedBack,
             )
         }
 

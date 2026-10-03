@@ -10,11 +10,13 @@ import com.splitease.data.local.dao.ExpenseDao
 import com.splitease.data.local.dao.ExpenseSplitDao
 import com.splitease.data.local.dao.GroupDao
 import com.splitease.data.local.dao.MemberDao
+import com.splitease.data.local.dao.ReminderDao
 import com.splitease.data.local.dao.SettlementPaymentDao
 import com.splitease.data.local.entity.ExpenseEntity
 import com.splitease.data.local.entity.ExpenseSplitEntity
 import com.splitease.data.local.entity.GroupEntity
 import com.splitease.data.local.entity.MemberEntity
+import com.splitease.data.local.entity.ReminderEntity
 import com.splitease.data.local.entity.SettlementPaymentEntity
 
 @Database(
@@ -24,8 +26,9 @@ import com.splitease.data.local.entity.SettlementPaymentEntity
         ExpenseEntity::class,
         ExpenseSplitEntity::class,
         SettlementPaymentEntity::class,
+        ReminderEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,6 +38,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun expenseSplitDao(): ExpenseSplitDao
     abstract fun settlementPaymentDao(): SettlementPaymentDao
+    abstract fun reminderDao(): ReminderDao
 
     companion object {
         private const val DATABASE_NAME = "splitease.db"
@@ -98,6 +102,26 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Version 4 → 5: adds the `reminders` table.
+         * Existing data in all other tables is unaffected.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `reminders` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `scheduled_at` INTEGER NOT NULL,
+                        `note` TEXT NOT NULL DEFAULT '',
+                        `is_completed` INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -108,7 +132,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME,
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { instance = it }
             }

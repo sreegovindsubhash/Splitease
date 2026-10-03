@@ -41,6 +41,8 @@ sealed class Screen(val route: String) {
         fun createRoute(groupId: Long) = "summary/$groupId"
     }
 
+    data object Reminders : Screen("reminders")
+
     data object Settings : Screen("settings")
 
     data object Onboarding : Screen("onboarding")
