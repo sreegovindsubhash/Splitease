@@ -104,8 +104,6 @@ reboot.
 
 ## Architecture
 
-## Architecture
-
 SplitEase follows a layered architecture with a clear separation between
 the UI, application logic, and local data layer.
 
@@ -136,6 +134,7 @@ the UI, application logic, and local data layer.
 The UI is built with Jetpack Compose. `ViewModel` and `StateFlow` are used for
 UI state, while business logic such as expense splitting, balance calculation,
 and debt simplification is kept separate from the UI.
+```  
 
 ## Offline-First
 
