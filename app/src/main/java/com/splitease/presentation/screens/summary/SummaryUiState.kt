@@ -1,5 +1,6 @@
 package com.splitease.presentation.screens.summary
 
+import com.splitease.domain.model.ExpenseCategory
 import com.splitease.domain.model.MemberBalance
 import com.splitease.domain.model.SettlementTransaction
 
@@ -52,6 +53,12 @@ data class SummaryUiState(
      * Each item includes the payer's resolved display name.
      */
     val recentExpenses: List<RecentExpenseItem> = emptyList(),
+
+    /**
+     * Total spending per category, sorted by total descending.
+     * Only categories with at least one expense are included.
+     */
+    val categoryTotals: List<CategoryTotal> = emptyList(),
 
     /** True once at least one expense exists for this group. */
     val hasExpenses: Boolean = false,
@@ -124,4 +131,13 @@ data class AdjustedMemberBalance(
     val memberName: String,
     /** Net position after applying all recorded settlement payments. Long minor units. */
     val adjustedNetMinorUnits: Long,
+)
+
+/**
+ * Total spending for a single expense category.
+ * [totalMinorUnits] is the sum of all expense amounts in this category.
+ */
+data class CategoryTotal(
+    val category: ExpenseCategory,
+    val totalMinorUnits: Long,
 )

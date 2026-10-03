@@ -1,6 +1,7 @@
 package com.splitease.util
 
 import com.splitease.domain.model.Expense
+import com.splitease.domain.model.ExpenseCategory
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -10,7 +11,7 @@ import java.util.Currency
  * Converts a list of [Expense] domain objects into a UTF-8 CSV string.
  *
  * Columns (in order):
- *   Date, Expense, Paid By, Amount, Currency
+ *   Date, Expense, Paid By, Amount, Currency, Category
  *
  * Rules:
  *   - Header row always included.
@@ -26,7 +27,7 @@ object ExpenseCsvExporter {
     private val DATE_FORMATTER: DateTimeFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault())
 
-    private val HEADER = "Date,Expense,Paid By,Amount,Currency"
+    private val HEADER = "Date,Expense,Paid By,Amount,Currency,Category"
 
     /**
      * Generates the full CSV text for the given [expenses].
@@ -53,7 +54,8 @@ object ExpenseCsvExporter {
             val payerName = csvEscape(memberNames[expense.paidByMemberId] ?: "Unknown")
             val amount = formatAmount(expense.amountMinorUnits, currencyCode)
             val currency = csvEscape(currencyCode)
-            sb.appendLine("$date,$description,$payerName,$amount,$currency")
+            val category = csvEscape(expense.category.displayName())
+            sb.appendLine("$date,$description,$payerName,$amount,$currency,$category")
         }
 
         // appendLine adds a trailing newline after the last row; trim it so the
@@ -118,4 +120,14 @@ object ExpenseCsvExporter {
         repeat(exp) { result *= 10 }
         return result
     }
+}
+
+private fun ExpenseCategory.displayName(): String = when (this) {
+    ExpenseCategory.FOOD -> "Food"
+    ExpenseCategory.TRANSPORT -> "Transport"
+    ExpenseCategory.ACCOMMODATION -> "Accommodation"
+    ExpenseCategory.SHOPPING -> "Shopping"
+    ExpenseCategory.ENTERTAINMENT -> "Entertainment"
+    ExpenseCategory.BILLS -> "Bills"
+    ExpenseCategory.OTHER -> "Other"
 }

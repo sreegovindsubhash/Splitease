@@ -25,8 +25,7 @@ enum class ExpenseCategory {
     ACCOMMODATION,
     SHOPPING,
     ENTERTAINMENT,
-    UTILITIES,
-    EDUCATION,
+    BILLS,
     OTHER,
 }
 

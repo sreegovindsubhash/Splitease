@@ -2,6 +2,7 @@ package com.splitease.presentation.screens.summary
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.splitease.domain.model.Expense
 import com.splitease.domain.model.MemberBalance
 import com.splitease.domain.model.SettlementPayment
 import com.splitease.domain.repository.ExpenseRepository
@@ -169,6 +170,11 @@ class SummaryViewModel(
                             )
                         }
 
+                    // ── Category totals ─────────────────────────────────────────
+                    // Group expenses by category, sum amounts, sort by total descending.
+                    // Only categories with at least one expense appear.
+                    val categoryTotals = computeCategoryTotals(data.expenses)
+
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -176,6 +182,7 @@ class SummaryViewModel(
                             adjustedBalances = adjustedBalances,
                             outstandingSettlements = outstandingSettlements,
                             recentExpenses = recentExpenses,
+                            categoryTotals = categoryTotals,
                             hasExpenses = data.expenses.isNotEmpty(),
                             errorMessage = null,
                         )
@@ -247,6 +254,25 @@ class SummaryViewModel(
                 )
             }
         }
+
+        /**
+         * Groups [expenses] by category, sums their amounts, and returns only categories
+         * that have at least one expense, sorted by total spending descending.
+         *
+         * All arithmetic is Long only — no Double/Float.
+         */
+        internal fun computeCategoryTotals(expenses: List<Expense>): List<CategoryTotal> =
+            expenses
+                .groupBy { it.category }
+                .map { (category, expensesInCat) ->
+                    CategoryTotal(
+                        category = category,
+                        totalMinorUnits = expensesInCat.fold(0L) { acc, e ->
+                            Math.addExact(acc, e.amountMinorUnits)
+                        },
+                    )
+                }
+                .sortedByDescending { it.totalMinorUnits }
     }
 
     fun retry() {

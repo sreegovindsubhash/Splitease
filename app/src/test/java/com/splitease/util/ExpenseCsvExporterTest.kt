@@ -83,7 +83,7 @@ class ExpenseCsvExporterTest {
     fun header_isCorrect() {
         val csv = ExpenseCsvExporter.generate(emptyList(), emptyMap(), "INR")
         val firstLine = lines(csv).first()
-        assertEquals("Date,Expense,Paid By,Amount,Currency", firstLine)
+        assertEquals("Date,Expense,Paid By,Amount,Currency,Category", firstLine)
     }
 
     // ── Test 2: One expense exports correctly ─────────────────────────────────
@@ -101,13 +101,14 @@ class ExpenseCsvExporterTest {
         assertEquals(2, rows.size, "Should have header + 1 data row")
 
         val fields = parseRow(rows[1])
-        assertEquals(5, fields.size)
+        assertEquals(6, fields.size)
         // Date is ISO: verify format
         assertTrue(fields[0].matches(Regex("\\d{4}-\\d{2}-\\d{2}")), "Date must be yyyy-MM-dd")
         assertEquals("Dinner", fields[1])
         assertEquals("Alice", fields[2])
         assertEquals("450.50", fields[3])
         assertEquals("INR", fields[4])
+        assertEquals("Other", fields[5])
     }
 
     // ── Test 3: Multiple expenses are newest-first ────────────────────────────
@@ -235,7 +236,43 @@ class ExpenseCsvExporterTest {
         val csv = ExpenseCsvExporter.generate(emptyList(), emptyMap(), "INR")
         val rows = lines(csv)
         assertEquals(1, rows.size, "Empty export must contain exactly the header row")
-        assertEquals("Date,Expense,Paid By,Amount,Currency", rows[0])
+        assertEquals("Date,Expense,Paid By,Amount,Currency,Category", rows[0])
+    }
+
+    // ── Category column ───────────────────────────────────────────────────────
+
+    @Test
+    fun categoryColumn_isIncluded() {
+        val exp = expense(id = 1L)
+        val csv = ExpenseCsvExporter.generate(listOf(exp), mapOf(1L to "Alice"), "INR")
+        val fields = parseRow(lines(csv)[1])
+        assertEquals(6, fields.size, "Row must have 6 fields including Category")
+        assertEquals("Other", fields[5], "Category column must be the 6th field")
+    }
+
+    @Test
+    fun categoryColumn_allCategories() {
+        // Verify every ExpenseCategory produces the expected display name in the CSV
+        val expenseCategories = listOf(
+            ExpenseCategory.FOOD to "Food",
+            ExpenseCategory.TRANSPORT to "Transport",
+            ExpenseCategory.ACCOMMODATION to "Accommodation",
+            ExpenseCategory.SHOPPING to "Shopping",
+            ExpenseCategory.ENTERTAINMENT to "Entertainment",
+            ExpenseCategory.BILLS to "Bills",
+            ExpenseCategory.OTHER to "Other",
+        )
+        expenseCategories.forEach { (cat, expected) ->
+            val exp = Expense(
+                id = 1L, groupId = 1L, description = "X",
+                amountMinorUnits = 100L, currencyCode = "INR",
+                paidByMemberId = 1L, category = cat, date = 1_000L,
+                splitMethod = SplitMethod.EQUAL,
+            )
+            val csv = ExpenseCsvExporter.generate(listOf(exp), mapOf(1L to "Alice"), "INR")
+            val fields = parseRow(lines(csv)[1])
+            assertEquals(expected, fields[5], "Category $cat should produce display name $expected")
+        }
     }
 
     // ── Test 11: Multiple payers resolve names correctly ─────────────────────

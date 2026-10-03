@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.splitease.domain.model.ExpenseCategory
 import com.splitease.domain.model.SettlementTransaction
 import com.splitease.presentation.components.AmountText
 import com.splitease.util.MoneyFormatter
@@ -259,6 +260,16 @@ private fun SummarySuccessContent(
                 uiState = uiState,
                 onViewSettlements = onNavigateToSettlement,
             )
+        }
+
+        // ── Spending by Category ──────────────────────────────────────────────
+        if (uiState.hasExpenses && uiState.categoryTotals.isNotEmpty()) {
+            item {
+                CategoryTotalsSection(
+                    categoryTotals = uiState.categoryTotals,
+                    currencyCode = uiState.currencyCode,
+                )
+            }
         }
 
         // ── Recent Expenses ───────────────────────────────────────────────────
@@ -647,6 +658,84 @@ private fun OutstandingSettlementRow(
             color = MaterialTheme.colorScheme.error,
         )
     }
+}
+
+// ── Category totals section ───────────────────────────────────────────────────
+
+@Composable
+private fun CategoryTotalsSection(
+    categoryTotals: List<CategoryTotal>,
+    currencyCode: String,
+) {
+    SectionCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Spending by Category",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            categoryTotals.forEach { item ->
+                CategoryTotalRow(item = item, currencyCode = currencyCode)
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryTotalRow(
+    item: CategoryTotal,
+    currencyCode: String,
+) {
+    val amountFormatted = MoneyFormatter.format(item.totalMinorUnits, currencyCode)
+    val categoryName = item.category.displayName()
+    val accessibleDescription = "$categoryName: $amountFormatted"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = accessibleDescription
+            },
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = categoryName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        AmountText(
+            amountMinorUnits = item.totalMinorUnits,
+            currencyCode = currencyCode,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+private fun ExpenseCategory.displayName(): String = when (this) {
+    ExpenseCategory.FOOD -> "Food"
+    ExpenseCategory.TRANSPORT -> "Transport"
+    ExpenseCategory.ACCOMMODATION -> "Accommodation"
+    ExpenseCategory.SHOPPING -> "Shopping"
+    ExpenseCategory.ENTERTAINMENT -> "Entertainment"
+    ExpenseCategory.BILLS -> "Bills"
+    ExpenseCategory.OTHER -> "Other"
 }
 
 // ── Recent expenses section ───────────────────────────────────────────────────

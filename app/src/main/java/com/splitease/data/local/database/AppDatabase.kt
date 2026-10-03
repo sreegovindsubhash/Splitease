@@ -25,7 +25,7 @@ import com.splitease.data.local.entity.SettlementPaymentEntity
         ExpenseSplitEntity::class,
         SettlementPaymentEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -72,6 +72,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Version 2 → 3: normalises the `category` column in `expenses`.
+         * Existing rows that hold 'UTILITIES' or 'EDUCATION' (from the old enum)
+         * are updated to 'OTHER' so they map cleanly to the current ExpenseCategory enum.
+         * All other category values are left unchanged.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "UPDATE `expenses` SET `category` = 'OTHER' WHERE `category` IN ('UTILITIES', 'EDUCATION')"
+                )
+            }
+        }
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -82,7 +96,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME,
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }

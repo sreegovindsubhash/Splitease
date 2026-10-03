@@ -769,8 +769,7 @@ private fun ExpenseCategory.displayName(): String = when (this) {
     ExpenseCategory.ACCOMMODATION -> "Accommodation"
     ExpenseCategory.SHOPPING -> "Shopping"
     ExpenseCategory.ENTERTAINMENT -> "Entertainment"
-    ExpenseCategory.UTILITIES -> "Utilities"
-    ExpenseCategory.EDUCATION -> "Education"
+    ExpenseCategory.BILLS -> "Bills"
     ExpenseCategory.OTHER -> "Other"
 }
 

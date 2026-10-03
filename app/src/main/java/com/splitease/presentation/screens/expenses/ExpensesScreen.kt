@@ -423,13 +423,12 @@ private fun ExpenseListItem(
 }
 
 private fun ExpenseCategory.emoji(): String = when (this) {
-    ExpenseCategory.FOOD -> "🍽"
-    ExpenseCategory.TRANSPORT -> "🚌"
+    ExpenseCategory.FOOD -> "🍽️"
+    ExpenseCategory.TRANSPORT -> "🚗"
     ExpenseCategory.ACCOMMODATION -> "🏠"
-    ExpenseCategory.SHOPPING -> "🛍"
+    ExpenseCategory.SHOPPING -> "🛍️"
     ExpenseCategory.ENTERTAINMENT -> "🎬"
-    ExpenseCategory.UTILITIES -> "💡"
-    ExpenseCategory.EDUCATION -> "📚"
+    ExpenseCategory.BILLS -> "💡"
     ExpenseCategory.OTHER -> "📋"
 }
 
