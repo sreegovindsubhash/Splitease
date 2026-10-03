@@ -33,8 +33,6 @@ Built as a university subject project using **Kotlin**, **Jetpack Compose**, **M
 
 <img src="docs/screenshots/settings.png" width="260">
 
-> The current Settings screenshot shows the in-app version as **1.0.0**. Retake this screenshot after updating the displayed app version to **1.2.0** before publishing the final v1.2.0 README.
-
 ## Features
 
 - Create and manage multiple expense groups
