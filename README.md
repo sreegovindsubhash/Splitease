@@ -596,3 +596,9 @@ The app has no external service dependencies.
     cloud backup or synchronization mechanism. Android's built-in app
     backup setting is enabled but is not explicitly configured by
     SplitEase.
+
+## Icon Attribution
+
+App icon: Hazicon Glyph by Hazicon, from Flaticon, used under the Flaticon Free License.
+
+    
