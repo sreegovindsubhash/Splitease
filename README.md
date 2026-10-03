@@ -56,34 +56,6 @@ Built as a university subject project using **Kotlin**, **Jetpack Compose**, **M
 - First-launch onboarding
 - Fully local, offline-first data storage
 
-## What's New in v1.2.0
-
-### Expense Categories
-
-Expenses can be assigned to seven categories:
-
-- Food
-- Transport
-- Accommodation
-- Shopping
-- Entertainment
-- Bills
-- Other
-
-Category spending is shown in the Summary screen and categories are included
-in CSV exports.
-
-### Group Budgets
-
-Groups can have an optional spending budget. The Group Overview screen shows
-the budget, total spending, remaining or over-budget amount, and progress.
-
-### Expense Reminders
-
-Users can create one-time reminders with a title, date, time, and optional
-note. Reminders use Android notifications and are rescheduled after device
-reboot.
-
 ## Technology Stack
 
 | Technology | Purpose |
@@ -159,6 +131,34 @@ SplitEase supports:
 
 Proportional splits use integer minor-unit calculations so the final
 allocations always reconcile exactly with the expense total.
+
+## What's New in v1.2.0
+
+### Expense Categories
+
+Expenses can be assigned to seven categories:
+
+- Food
+- Transport
+- Accommodation
+- Shopping
+- Entertainment
+- Bills
+- Other
+
+Category spending is shown in the Summary screen and categories are included
+in CSV exports.
+
+### Group Budgets
+
+Groups can have an optional spending budget. The Group Overview screen shows
+the budget, total spending, remaining or over-budget amount, and progress.
+
+### Expense Reminders
+
+Users can create one-time reminders with a title, date, time, and optional
+note. Reminders use Android notifications and are rescheduled after device
+reboot.
 
 ## Testing
 
